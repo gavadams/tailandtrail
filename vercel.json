@@ -7,7 +7,7 @@
     {
       "source": "/play",
       "destination": "/index.html"
-    }
+    },
     {
       "source": "/purchase",
       "destination": "/index.html"
