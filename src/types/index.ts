@@ -1,0 +1,107 @@
+/**
+ * Type definitions for the Tale and Trail application
+ * These types define the structure of our data throughout the app
+ */
+
+export interface Game {
+  id: string;
+  title: string;
+  description: string;
+  theme: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Puzzle {
+  id: string;
+  game_id: string;
+  title: string;
+  description: string;
+  riddle: string;
+  clues: string[]; // Array of progressive clues
+  answer: string;
+  sequence_order: number;
+  image_url?: string;
+  video_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccessCode {
+  id: string;
+  code: string;
+  game_id: string;
+  is_active: boolean;
+  activated_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface PlayerSession {
+  id: string;
+  access_code_id: string;
+  game_id: string;
+  current_puzzle_id: string | null;
+  completed_puzzles: string[]; // Array of completed puzzle IDs
+  session_data: any; // Store puzzle progress, revealed clues, etc.
+  last_activity: string;
+  created_at: string;
+}
+
+export interface CodeUsageLog {
+  id: string;
+  access_code_id: string;
+  game_id: string;
+  action: 'activated' | 'expired' | 'completed';
+  timestamp: string;
+  metadata: any;
+}
+
+export interface SplashScreen {
+  id: string;
+  game_id: string;
+  title: string;
+  content: string;
+  image_url?: string;
+  video_url?: string;
+  sequence_order: number;
+  puzzle_id?: string; // Show before this puzzle
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Purchase {
+  id: string;
+  email: string;
+  game_id: string;
+  access_code_id: string;
+  amount: number;
+  stripe_payment_intent_id: string;
+  status: 'pending' | 'completed' | 'failed';
+  opt_in_marketing: boolean;
+  created_at: string;
+}
+
+export interface ContentPage {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  meta_description?: string;
+  is_published: boolean;
+  show_in_nav: boolean;
+  nav_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteSettings {
+  id: string;
+  key: string;
+  value: string;
+  type: 'text' | 'textarea' | 'html' | 'image' | 'boolean' | 'number';
+  category: string;
+  label: string;
+  description?: string;
+  updated_at: string;
+}

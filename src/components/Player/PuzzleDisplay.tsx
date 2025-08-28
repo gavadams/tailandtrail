@@ -1,0 +1,311 @@
+/**
+ * Main puzzle display component
+ * Shows the current puzzle with progressive clues and answer submission
+ */
+
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { Lightbulb, CheckCircle, XCircle, ArrowRight, Eye } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useGameStore } from '../../stores/gameStore';
+import { Puzzle } from '../../types';
+
+interface AnswerForm {
+  answer: string;
+}
+
+export const PuzzleDisplay: React.FC = () => {
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<AnswerForm>();
+  
+  const {
+    currentPuzzle,
+    currentSession,
+    puzzles,
+    revealedClues,
+    revealNextClue,
+    resetClues,
+    markPuzzleComplete,
+    setCurrentPuzzle,
+    setSession,
+    setError
+  } = useGameStore();
+
+  useEffect(() => {
+    if (currentPuzzle) {
+      resetClues();
+      setShowAnswer(false);
+      reset();
+    }
+  }, [currentPuzzle?.id]);
+
+  const submitAnswer = async (data: AnswerForm) => {
+    if (!currentPuzzle || !currentSession) return;
+
+    setIsSubmitting(true);
+    const userAnswer = data.answer.toLowerCase().trim();
+    const correctAnswer = currentPuzzle.answer.toLowerCase().trim();
+
+    if (userAnswer === correctAnswer) {
+      // Mark puzzle as complete
+      const updatedCompletedPuzzles = [...currentSession.completed_puzzles, currentPuzzle.id];
+      
+      // Update session in database
+      const { error: updateError } = await supabase
+        .from('player_sessions')
+        .update({
+          completed_puzzles: updatedCompletedPuzzles,
+          last_activity: new Date().toISOString()
+        })
+        .eq('id', currentSession.id);
+
+      if (updateError) {
+        setError('Failed to save progress');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Update local state
+      markPuzzleComplete(currentPuzzle.id);
+      setSession({
+        ...currentSession,
+        completed_puzzles: updatedCompletedPuzzles
+      });
+
+      setShowAnswer(true);
+      
+      // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Auto-advance after 3 seconds
+      setTimeout(() => {
+        goToNextPuzzle();
+      }, 3000);
+      
+    } else {
+      // Wrong answer - reveal next clue if available
+      if (revealedClues < currentPuzzle.clues.length) {
+        revealNextClue();
+        
+        // Scroll to the newly revealed clue after a short delay to ensure DOM update
+        setTimeout(() => {
+          const newClueIndex = revealedClues; // This will be the index of the newly revealed clue
+          const clueElement = document.getElementById(`clue-${newClueIndex}`);
+          
+          if (clueElement) {
+            // Scroll to the specific newly revealed clue
+            clueElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            // Fallback: scroll to the clues section
+            const cluesSection = document.getElementById('clues-section');
+            if (cluesSection) {
+              cluesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              // Final fallback: scroll to answer input
+              const answerInput = document.getElementById('answer-input');
+              if (answerInput) {
+                answerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+          }
+        }, 100);
+      } else {
+        // No more clues available, scroll to answer input to encourage retry
+        setTimeout(() => {
+          const answerInput = document.getElementById('answer-input');
+          if (answerInput) {
+            answerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      }
+      
+      // Show encouraging message for wrong answers
+      const encouragements = [
+        "Not quite! Try again with the clue below.",
+        "Close! Check out the hint that just appeared.",
+        "Keep thinking! A new clue is now available.",
+        "Almost there! Use the new clue to guide you."
+      ];
+      // You could show these messages in a toast or temporary display
+    }
+    
+    setIsSubmitting(false);
+    reset();
+  };
+
+  const goToNextPuzzle = () => {
+    if (!currentPuzzle || !currentSession) return;
+
+    const currentIndex = puzzles.findIndex(p => p.id === currentPuzzle.id);
+    const nextPuzzle = puzzles[currentIndex + 1];
+
+    if (nextPuzzle) {
+      setCurrentPuzzle(nextPuzzle);
+      
+      // Scroll to top when moving to next puzzle
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Update current puzzle in session
+      supabase
+        .from('player_sessions')
+        .update({ current_puzzle_id: nextPuzzle.id })
+        .eq('id', currentSession.id);
+    }
+  };
+
+
+  const isLastPuzzle = currentPuzzle ? puzzles.findIndex(p => p.id === currentPuzzle.id) === puzzles.length - 1 : false;
+  const isCompleted = currentSession?.completed_puzzles.includes(currentPuzzle?.id || '') || false;
+
+  if (!currentPuzzle) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-yellow-200 text-lg">Loading puzzle...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Puzzle Header */}
+      <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl p-6 mb-8 shadow-xl border border-yellow-600">
+        <h2 className="text-3xl font-bold text-yellow-200 mb-3">
+          {currentPuzzle.title}
+        </h2>
+        <div 
+          className="prose prose-lg prose-invert max-w-none text-yellow-300"
+          dangerouslySetInnerHTML={{ __html: currentPuzzle.description }}
+        />
+      </div>
+
+      {/* Riddle */}
+      <div className="bg-gray-100 rounded-xl p-6 mb-6 border-4 border-yellow-400 shadow-lg">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+          <Eye className="h-6 w-6 mr-2" />
+          The Challenge
+        </h3>
+        
+        {/* Puzzle Media */}
+        {(currentPuzzle.image_url || currentPuzzle.video_url) && (
+          <div className="mb-6">
+            {currentPuzzle.video_url ? (
+              <div className="relative rounded-lg overflow-hidden">
+                <video 
+                  className="w-full h-auto object-contain"
+                  controls
+                  preload="metadata"
+                >
+                  <source src={currentPuzzle.video_url} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            ) : currentPuzzle.image_url && (
+              <div className="relative rounded-lg overflow-hidden">
+                <img 
+                  src={currentPuzzle.image_url} 
+                  alt="Puzzle illustration"
+                  className="w-full h-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div 
+          className="prose prose-lg max-w-none text-gray-800 font-medium"
+          dangerouslySetInnerHTML={{ __html: currentPuzzle.riddle }}
+        />
+      </div>
+
+      {/* Progressive Clues */}
+      {currentPuzzle.clues.length > 0 && (
+        <div id="clues-section" className="bg-yellow-50 rounded-xl p-6 mb-6 border-2 border-yellow-500">
+          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <Lightbulb className="h-5 w-5 mr-2" />
+            Clues {revealedClues > 0 && `(${revealedClues}/${currentPuzzle.clues.length})`}
+          </h3>
+          
+          {revealedClues === 0 ? (
+            <p className="text-gray-700 italic">
+              Submit an incorrect answer to reveal your first clue!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {currentPuzzle.clues.slice(0, revealedClues).map((clue, index) => (
+                <div key={index} id={`clue-${index}`} className="flex items-start space-x-3">
+                  <div className="bg-yellow-600 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    {index + 1}
+                  </div>
+                  <p className="text-gray-800 flex-1">{clue}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Answer Section */}
+      {!isCompleted && !showAnswer && (
+        <div className="bg-white rounded-xl p-6 shadow-xl border-2 border-yellow-400">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Your Answer</h3>
+          
+          <form onSubmit={handleSubmit(submitAnswer)} className="space-y-4">
+            <div>
+              <input
+                {...register('answer', { required: 'Please enter your answer' })}
+                id="answer-input"
+                type="text"
+                placeholder="Enter your answer..."
+                className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-colors text-lg"
+              />
+              {errors.answer && (
+                <p className="text-red-600 text-sm mt-1">{errors.answer.message}</p>
+              )}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 text-yellow-100 font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
+            >
+              {isSubmitting ? 'Checking...' : 'Submit Answer'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Success State */}
+      {showAnswer && (
+        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-center shadow-xl">
+          <CheckCircle className="h-16 w-16 text-green-100 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-green-100 mb-2">
+            Brilliant! You got it!
+          </h3>
+          <p className="text-green-200 text-lg mb-4">
+            The answer was: <strong>{currentPuzzle.answer}</strong>
+          </p>
+          
+          {!isLastPuzzle ? (
+            <div className="space-y-2">
+              <p className="text-green-100">Moving to the next puzzle...</p>
+              <button
+                onClick={goToNextPuzzle}
+                className="inline-flex items-center bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Continue <ArrowRight className="h-4 w-4 ml-2" />
+              </button>
+            </div>
+          ) : (
+            <p className="text-green-100 text-xl font-bold">
+              🎉 Congratulations! You've completed all puzzles! 🎉
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
