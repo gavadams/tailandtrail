@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("FROM_EMAIL") || "Tale and Trail <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("FROM_EMAIL") || "Tale and Trail <noreply@tailandtrail.games>";
     const adminEmail = Deno.env.get("ADMIN_EMAIL") || "";
     const siteUrl = Deno.env.get("SITE_URL") || "";
 
@@ -93,7 +93,7 @@ Valid for 12 hours from first use.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: fromEmail, // e.g., "Tale and Trail <noreply@yourdomain.com>"
+          from: fromEmail, // e.g., "Tale and Trail <noreply@taleandtrail.games>"
           to,
           subject,
           html,
