@@ -68,7 +68,7 @@ serve(async (req) => {
         <div style="background:#10b981;color:#fff;font-weight:700;font-size:28px;letter-spacing:4px;padding:16px;border-radius:8px;text-align:center;margin:16px 0;">
           ${accessCode}
         </div>
-        <p>Start playing here: <a href="${siteUrl}/play">${siteUrl}/play</a></p>
+        <p>Start playing here: <a href="${siteUrl}/play">${siteUrl}play</a></p>
         <p><small>Valid for 12 hours from first use.</small></p>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
         <p style="color:#666;font-size:12px">If you didn’t make this purchase, please contact support.</p>
