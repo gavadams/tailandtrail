@@ -255,13 +255,28 @@ export const PuzzleDisplay: React.FC = () => {
           
           <form onSubmit={handleSubmit(submitAnswer)} className="space-y-4">
             <div>
-              <input
-                {...register('answer', { required: 'Please enter your answer' })}
-                id="answer-input"
-                type="text"
-                placeholder="Enter your answer..."
-                className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-colors text-lg"
-              />
+              {currentPuzzle.answer_type === 'dropdown' && currentPuzzle.answer_options ? (
+                <select
+                  {...register('answer', { required: 'Please select an answer' })}
+                  id="answer-input"
+                  className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-colors text-lg bg-white"
+                >
+                  <option value="">Choose your answer...</option>
+                  {currentPuzzle.answer_options.map((option, index) => (
+                    <option key={index} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  {...register('answer', { required: 'Please enter your answer' })}
+                  id="answer-input"
+                  type="text"
+                  placeholder="Enter your answer..."
+                  className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 outline-none transition-colors text-lg"
+                />
+              )}
               {errors.answer && (
                 <p className="text-red-600 text-sm mt-1">{errors.answer.message}</p>
               )}

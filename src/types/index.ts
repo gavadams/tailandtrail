@@ -20,6 +20,8 @@ export interface Puzzle {
   riddle: string;
   clues: string[]; // Array of progressive clues
   answer: string;
+  answer_type: 'text' | 'dropdown';
+  answer_options?: string[]; // Array of dropdown options
   sequence_order: number;
   image_url?: string;
   video_url?: string;

@@ -17,6 +17,8 @@ interface PuzzleForm {
   riddle: string;
   clues: { value: string }[];
   answer: string;
+  answer_type: 'text' | 'dropdown';
+  answer_options: { value: string }[];
   game_id: string;
   image_url: string;
   video_url: string;
@@ -37,7 +39,9 @@ export const PuzzleManagement: React.FC = () => {
 
   const { register, control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<PuzzleForm>({
     defaultValues: {
-      clues: [{ value: '' }]
+      clues: [{ value: '' }],
+      answer_options: [{ value: '' }],
+      answer_type: 'text'
     }
   });
 
@@ -46,7 +50,13 @@ export const PuzzleManagement: React.FC = () => {
     name: "clues"
   });
 
+  const { fields: answerOptionFields, append: appendAnswerOption, remove: removeAnswerOption, move: moveAnswerOption } = useFieldArray({
+    control,
+    name: "answer_options"
+  });
+
   const watchGameId = watch("game_id");
+  const watchAnswerType = watch("answer_type");
 
   useEffect(() => {
     loadGames();
@@ -95,6 +105,7 @@ export const PuzzleManagement: React.FC = () => {
   const handleSavePuzzle = async (data: PuzzleForm) => {
     try {
       const clues = data.clues.map(c => c.value).filter(c => c.trim() !== '');
+      const answerOptions = data.answer_options.map(o => o.value).filter(o => o.trim() !== '');
       
       const puzzleData = {
         title: data.title,
@@ -102,6 +113,8 @@ export const PuzzleManagement: React.FC = () => {
         riddle: puzzleRiddle,
         clues: clues,
         answer: data.answer,
+        answer_type: data.answer_type,
+        answer_options: data.answer_type === 'dropdown' ? answerOptions : null,
         image_url: data.image_url || null,
         video_url: data.video_url || null
       };
@@ -152,6 +165,8 @@ export const PuzzleManagement: React.FC = () => {
     setPuzzleDescription(puzzle.description);
     setPuzzleRiddle(puzzle.riddle);
     setValue('answer', puzzle.answer);
+    setValue('answer_type', puzzle.answer_type || 'text');
+    setValue('answer_options', puzzle.answer_options ? puzzle.answer_options.map(option => ({ value: option })) : [{ value: '' }]);
     setValue('game_id', puzzle.game_id);
     setValue('image_url', puzzle.image_url || '');
     setValue('video_url', puzzle.video_url || '');
@@ -212,7 +227,11 @@ export const PuzzleManagement: React.FC = () => {
     setShowForm(false);
     setPuzzleDescription('');
     setPuzzleRiddle('');
-    reset({ clues: [{ value: '' }] });
+    reset({ 
+      clues: [{ value: '' }],
+      answer_options: [{ value: '' }],
+      answer_type: 'text'
+    });
   };
 
   if (isLoading) {
@@ -441,6 +460,22 @@ export const PuzzleManagement: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Answer Type
+              </label>
+              <select
+                {...register('answer_type', { required: 'Answer type is required' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              >
+                <option value="text">Text Input</option>
+                <option value="dropdown">Dropdown Selection</option>
+              </select>
+              {errors.answer_type && (
+                <p className="text-red-600 text-sm mt-1">{errors.answer_type.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Correct Answer
               </label>
               <input
@@ -453,6 +488,72 @@ export const PuzzleManagement: React.FC = () => {
                 <p className="text-red-600 text-sm mt-1">{errors.answer.message}</p>
               )}
             </div>
+
+            {watchAnswerType === 'dropdown' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Answer Options
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Add multiple answer options for players to choose from. The correct answer must be one of these options.
+                </p>
+                <div className="space-y-2">
+                  {answerOptionFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-500 w-12">
+                        #{index + 1}
+                      </span>
+                      <input
+                        {...register(`answer_options.${index}.value` as const)}
+                        type="text"
+                        placeholder={`Option ${index + 1}...`}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                      <div className="flex space-x-1">
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => moveAnswerOption(index, index - 1)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Move up"
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </button>
+                        )}
+                        {index < answerOptionFields.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => moveAnswerOption(index, index + 1)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Move down"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </button>
+                        )}
+                        {answerOptionFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeAnswerOption(index)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="Remove option"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendAnswerOption({ value: '' })}
+                    className="text-blue-600 hover:text-blue-700 text-sm flex items-center space-x-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add Option</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex space-x-3">
               <button
