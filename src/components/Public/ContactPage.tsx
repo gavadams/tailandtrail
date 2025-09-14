@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle, Instagram } from 'lucide-react';
+import { useContentStore } from '../../stores/contentStore';
 
 interface ContactForm {
   name: string;
@@ -18,6 +19,7 @@ export const ContactPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ContactForm>();
+  const { getSetting } = useContentStore();
 
   const handleContactSubmit = async (data: ContactForm) => {
     setIsSubmitting(true);
@@ -73,10 +75,10 @@ export const ContactPage: React.FC = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-amber-100 mb-6">
-            Contact Us
+            {getSetting('contact_title', 'Contact Us')}
           </h1>
           <p className="text-xl text-amber-200 mb-12">
-            Need help? Have questions? We're here to assist you!
+            {getSetting('contact_subtitle', 'Need help? Have questions? We\'re here to assist you!')}
           </p>
         </div>
       </section>
@@ -86,53 +88,75 @@ export const ContactPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Info */}
             <div>
-              <h2 className="text-3xl font-bold text-amber-900 mb-8">Get in Touch</h2>
+              <h2 className="text-3xl font-bold text-amber-900 mb-8">
+                {getSetting('contact_section_title', 'Get in Touch')}
+              </h2>
               
               <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-amber-800 p-3 rounded-full">
-                    <Mail className="h-6 w-6 text-amber-100" />
+                {getSetting('contact_email') && (
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-amber-800 p-3 rounded-full">
+                      <Mail className="h-6 w-6 text-amber-100" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-amber-900">Email</h3>
+                      <p className="text-amber-700">{getSetting('contact_email')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-amber-900">Email</h3>
-                     <p className="text-amber-700">gav.adams@gmail.com</p>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-center space-x-4">
-                  <div className="bg-amber-800 p-3 rounded-full">
-                    <Instagram className="h-6 w-6 text-amber-100" />
+                {getSetting('contact_instagram') && (
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-amber-800 p-3 rounded-full">
+                      <Instagram className="h-6 w-6 text-amber-100" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-amber-900">Instagram</h3>
+                      <p className="text-amber-700">{getSetting('contact_instagram')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-amber-900">Instagram</h3>
-                    <p className="text-amber-700">@Playtailandtrail</p>
-                  </div>
-                </div>
+                )}
 
-                {/*<div className="flex items-center space-x-4">
-                  <div className="bg-amber-800 p-3 rounded-full">
-                    <MapPin className="h-6 w-6 text-amber-100" />
+                {getSetting('contact_phone') && (
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-amber-800 p-3 rounded-full">
+                      <Phone className="h-6 w-6 text-amber-100" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-amber-900">Phone</h3>
+                      <p className="text-amber-700">{getSetting('contact_phone')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-amber-900">Address</h3>
-                    <p className="text-amber-700">123 Puzzle Street<br />Adventure City, AC 12345</p>
+                )}
+
+                {getSetting('contact_address') && (
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-amber-800 p-3 rounded-full">
+                      <MapPin className="h-6 w-6 text-amber-100" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-amber-900">Address</h3>
+                      <p className="text-amber-700 whitespace-pre-line">{getSetting('contact_address')}</p>
+                    </div>
                   </div>
-                </div>*/}
+                )}
               </div>
 
-              {/*<div className="mt-8 p-6 bg-amber-100 rounded-lg">
-                <h3 className="font-bold text-amber-900 mb-3">Business Hours</h3>
-                <div className="space-y-1 text-amber-800">
-                  <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-                  <p>Saturday: 10:00 AM - 4:00 PM</p>
-                  <p>Sunday: Closed</p>
+              {getSetting('contact_business_hours') && (
+                <div className="mt-8 p-6 bg-amber-100 rounded-lg">
+                  <h3 className="font-bold text-amber-900 mb-3">Business Hours</h3>
+                  <div className="space-y-1 text-amber-800 whitespace-pre-line">
+                    {getSetting('contact_business_hours')}
+                  </div>
                 </div>
-              </div>*/}
+              )}
             </div>
 
             {/* Contact Form */}
             <div className="bg-white rounded-xl p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-amber-900 mb-6">Send us a Message</h2>
+              <h2 className="text-2xl font-bold text-amber-900 mb-6">
+                {getSetting('contact_form_title', 'Send us a Message')}
+              </h2>
               
               {isSubmitted && (
                 <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-400 rounded">
