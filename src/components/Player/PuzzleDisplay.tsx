@@ -17,6 +17,7 @@ interface AnswerForm {
 export const PuzzleDisplay: React.FC = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [puzzleStartTime, setPuzzleStartTime] = useState<Date | null>(null);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<AnswerForm>();
   
   const {
@@ -37,8 +38,52 @@ export const PuzzleDisplay: React.FC = () => {
       resetClues();
       setShowAnswer(false);
       reset();
+      setPuzzleStartTime(new Date());
+      
+      // Track puzzle start
+      trackPuzzleInteraction('puzzle_started');
     }
   }, [currentPuzzle?.id]);
+
+  // Analytics tracking functions
+  const trackPuzzleInteraction = async (
+    actionType: 'puzzle_started' | 'hint_revealed' | 'wrong_answer' | 'correct_answer' | 'puzzle_completed',
+    data?: {
+      hintIndex?: number;
+      hintText?: string;
+      userAnswer?: string;
+      isCorrect?: boolean;
+    }
+  ) => {
+    if (!currentPuzzle || !currentSession) return;
+
+    try {
+      const now = new Date();
+      const timeToSolve = puzzleStartTime ? Math.floor((now.getTime() - puzzleStartTime.getTime()) / 1000) : 0;
+      const timeToHint = data?.hintIndex !== undefined && puzzleStartTime ? 
+        Math.floor((now.getTime() - puzzleStartTime.getTime()) / 1000) : null;
+
+      await supabase.from('puzzle_interactions').insert({
+        player_session_id: currentSession.id,
+        puzzle_id: currentPuzzle.id,
+        game_id: currentPuzzle.game_id,
+        access_code_id: currentSession.access_code_id,
+        action_type: actionType,
+        hint_index: data?.hintIndex,
+        hint_text: data?.hintText,
+        user_answer: data?.userAnswer,
+        is_correct: data?.isCorrect,
+        puzzle_start_time: puzzleStartTime?.toISOString(),
+        puzzle_end_time: actionType === 'puzzle_completed' ? now.toISOString() : null,
+        time_to_solve: actionType === 'puzzle_completed' ? timeToSolve : null,
+        time_to_hint: timeToHint,
+        user_agent: navigator.userAgent,
+        created_at: now.toISOString()
+      });
+    } catch (error) {
+      console.error('Failed to track puzzle interaction:', error);
+    }
+  };
 
   const submitAnswer = async (data: AnswerForm) => {
     if (!currentPuzzle || !currentSession) return;
@@ -48,6 +93,12 @@ export const PuzzleDisplay: React.FC = () => {
     const correctAnswer = currentPuzzle.answer.toLowerCase().trim();
 
     if (userAnswer === correctAnswer) {
+      // Track correct answer
+      await trackPuzzleInteraction('correct_answer', {
+        userAnswer: data.answer,
+        isCorrect: true
+      });
+
       // Mark puzzle as complete
       const updatedCompletedPuzzles = [...currentSession.completed_puzzles, currentPuzzle.id];
       
@@ -65,6 +116,9 @@ export const PuzzleDisplay: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
+
+      // Track puzzle completion
+      await trackPuzzleInteraction('puzzle_completed');
 
       // Update local state
       markPuzzleComplete(currentPuzzle.id);
@@ -84,13 +138,27 @@ export const PuzzleDisplay: React.FC = () => {
       }, 3000);
       
     } else {
+      // Track wrong answer
+      await trackPuzzleInteraction('wrong_answer', {
+        userAnswer: data.answer,
+        isCorrect: false
+      });
+
       // Wrong answer - reveal next clue if available
       if (revealedClues < currentPuzzle.clues.length) {
+        const newClueIndex = revealedClues;
+        const newClueText = currentPuzzle.clues[newClueIndex];
+        
         revealNextClue();
+        
+        // Track hint reveal
+        await trackPuzzleInteraction('hint_revealed', {
+          hintIndex: newClueIndex,
+          hintText: newClueText
+        });
         
         // Scroll to the newly revealed clue after a short delay to ensure DOM update
         setTimeout(() => {
-          const newClueIndex = revealedClues; // This will be the index of the newly revealed clue
           const clueElement = document.getElementById(`clue-${newClueIndex}`);
           
           if (clueElement) {
