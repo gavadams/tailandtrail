@@ -11,9 +11,10 @@ import { useContentStore } from '../../stores/contentStore';
 interface HeaderProps {
   showAdminControls?: boolean;
   onLogout?: () => void;
+  hideBranding?: boolean; // Hide beer icon and site name for player game mode
 }
 
-export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout, hideBranding = false }) => {
   const { currentGame, currentSession } = useGameStore();
   const { getSetting } = useContentStore();
 
@@ -23,13 +24,17 @@ export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout }) =
         <div className="flex justify-between items-center py-4">
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
-            <div className="bg-yellow-100 p-2 rounded-full shadow-lg">
-              <Beer className="h-8 w-8 text-gray-900" />
-            </div>
+            {!hideBranding && (
+              <div className="bg-yellow-100 p-2 rounded-full shadow-lg">
+                <Beer className="h-8 w-8 text-gray-900" />
+              </div>
+            )}
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-yellow-200 tracking-wide">
-                {getSetting('site_name')}
-              </h1>
+              {!hideBranding && (
+                <h1 className="text-2xl md:text-3xl font-bold text-yellow-200 tracking-wide">
+                  {getSetting('site_name')}
+                </h1>
+              )}
               {currentGame && (
                 <p className="text-yellow-300 text-sm font-medium">
                   {currentGame.title}
