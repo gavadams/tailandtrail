@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Plus, Edit3, Trash2, Puzzle as PuzzleIcon, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Puzzle as PuzzleIcon, ArrowUp, ArrowDown, AlertCircle, MapPin } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
@@ -75,7 +75,10 @@ export const PuzzleManagement: React.FC = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('games')
-        .select('*')
+        .select(`
+          *,
+          cities (id, name, country)
+        `)
         .order('title');
 
       if (fetchError) throw fetchError;
@@ -273,7 +276,7 @@ export const PuzzleManagement: React.FC = () => {
           <option value="">Choose a game...</option>
           {games.map((game) => (
             <option key={game.id} value={game.id}>
-              {game.title}
+              {game.title} - {(game as any).cities?.name || 'No city assigned'}
             </option>
           ))}
         </select>
@@ -309,7 +312,7 @@ export const PuzzleManagement: React.FC = () => {
                   <option value="">Select a game...</option>
                   {games.map((game) => (
                     <option key={game.id} value={game.id}>
-                      {game.title}
+                      {game.title} - {(game as any).cities?.name || 'No city assigned'}
                     </option>
                   ))}
                 </select>
@@ -578,9 +581,15 @@ export const PuzzleManagement: React.FC = () => {
       {/* Puzzles List */}
       {selectedGameId && (
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Puzzles for {games.find(g => g.id === selectedGameId)?.title}
-          </h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">
+              Puzzles for {games.find(g => g.id === selectedGameId)?.title}
+            </h3>
+            <p className="text-gray-600 text-sm mt-1 flex items-center">
+              <MapPin className="h-4 w-4 mr-1" />
+              Location: {(games.find(g => g.id === selectedGameId) as any)?.cities?.name || 'No city assigned'}
+            </p>
+          </div>
           
           {puzzles.length > 0 ? (
             <div className="space-y-4">

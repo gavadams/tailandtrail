@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, Image, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image, ArrowUp, ArrowDown, AlertCircle, MapPin } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import { supabase } from '../../lib/supabase';
 import { Game, Puzzle, SplashScreen } from '../../types';
@@ -58,7 +58,10 @@ export const SplashScreenManagement: React.FC = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('games')
-        .select('*')
+        .select(`
+          *,
+          cities (id, name, country)
+        `)
         .order('title');
 
       if (fetchError) throw fetchError;
@@ -239,7 +242,7 @@ export const SplashScreenManagement: React.FC = () => {
           <option value="">Choose a game...</option>
           {games.map((game) => (
             <option key={game.id} value={game.id}>
-              {game.title}
+              {game.title} - {(game as any).cities?.name || 'No city assigned'}
             </option>
           ))}
         </select>
@@ -275,7 +278,7 @@ export const SplashScreenManagement: React.FC = () => {
                   <option value="">Select a game...</option>
                   {games.map((game) => (
                     <option key={game.id} value={game.id}>
-                      {game.title}
+                      {game.title} - {(game as any).cities?.name || 'No city assigned'}
                     </option>
                   ))}
                 </select>
@@ -390,9 +393,15 @@ export const SplashScreenManagement: React.FC = () => {
       {/* Splash Screens List */}
       {selectedGameId && (
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            Splash Screens for {games.find(g => g.id === selectedGameId)?.title}
-          </h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">
+              Splash Screens for {games.find(g => g.id === selectedGameId)?.title}
+            </h3>
+            <p className="text-gray-600 text-sm mt-1 flex items-center">
+              <MapPin className="h-4 w-4 mr-1" />
+              Location: {(games.find(g => g.id === selectedGameId) as any)?.cities?.name || 'No city assigned'}
+            </p>
+          </div>
           
           {splashScreens.length > 0 ? (
             <div className="space-y-4">

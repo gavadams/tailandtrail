@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin } from 'lucide-react';
+import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Game, City } from '../../types';
 
@@ -20,8 +20,11 @@ export const GameManagement: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [duplicatingGame, setDuplicatingGame] = useState<Game | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<GameForm>();
@@ -137,6 +140,105 @@ export const GameManagement: React.FC = () => {
     setEditingGame(null);
     setShowForm(false);
     reset();
+  };
+
+  const handleDuplicateGame = (game: Game) => {
+    setDuplicatingGame(game);
+    setShowDuplicateModal(true);
+  };
+
+  const handleDuplicateSubmit = async (data: { new_city_id: string; new_title: string }) => {
+    if (!duplicatingGame) return;
+
+    setIsDuplicating(true);
+    try {
+      // First, create the new game
+      const { data: newGame, error: gameError } = await supabase
+        .from('games')
+        .insert({
+          title: data.new_title,
+          description: duplicatingGame.description,
+          theme: duplicatingGame.theme,
+          city_id: data.new_city_id
+        })
+        .select()
+        .single();
+
+      if (gameError) throw gameError;
+
+      // Then, get all puzzles from the original game
+      const { data: originalPuzzles, error: puzzlesError } = await supabase
+        .from('puzzles')
+        .select('*')
+        .eq('game_id', duplicatingGame.id)
+        .order('sequence_order');
+
+      if (puzzlesError) throw puzzlesError;
+
+      // Duplicate all puzzles for the new game
+      if (originalPuzzles && originalPuzzles.length > 0) {
+        const newPuzzles = originalPuzzles.map(puzzle => ({
+          game_id: newGame.id,
+          title: puzzle.title,
+          description: puzzle.description,
+          riddle: puzzle.riddle,
+          clues: puzzle.clues,
+          answer: puzzle.answer,
+          answer_type: puzzle.answer_type,
+          answer_options: puzzle.answer_options,
+          sequence_order: puzzle.sequence_order,
+          image_url: puzzle.image_url,
+          video_url: puzzle.video_url
+        }));
+
+        const { error: insertPuzzlesError } = await supabase
+          .from('puzzles')
+          .insert(newPuzzles);
+
+        if (insertPuzzlesError) throw insertPuzzlesError;
+      }
+
+      // Duplicate splash screens for the new game
+      const { data: originalSplashScreens, error: splashError } = await supabase
+        .from('splash_screens')
+        .select('*')
+        .eq('game_id', duplicatingGame.id)
+        .order('sequence_order');
+
+      if (splashError) throw splashError;
+
+      if (originalSplashScreens && originalSplashScreens.length > 0) {
+        const newSplashScreens = originalSplashScreens.map(splash => ({
+          game_id: newGame.id,
+          title: splash.title,
+          content: splash.content,
+          image_url: splash.image_url,
+          video_url: splash.video_url,
+          sequence_order: splash.sequence_order,
+          puzzle_id: splash.puzzle_id // This will be null initially, can be updated later
+        }));
+
+        const { error: insertSplashError } = await supabase
+          .from('splash_screens')
+          .insert(newSplashScreens);
+
+        if (insertSplashError) throw insertSplashError;
+      }
+
+      // Reset and reload
+      setShowDuplicateModal(false);
+      setDuplicatingGame(null);
+      loadGames();
+    } catch (err) {
+      setError('Failed to duplicate game');
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setShowDuplicateModal(false);
+    setDuplicatingGame(null);
   };
 
   if (isLoading) {
@@ -290,6 +392,13 @@ export const GameManagement: React.FC = () => {
                     <Edit3 className="h-4 w-4" />
                   </button>
                   <button
+                    onClick={() => handleDuplicateGame(game)}
+                    className="text-green-600 hover:text-green-700 p-1"
+                    title="Duplicate Game"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => handleDeleteGame(game.id)}
                     className="text-red-600 hover:text-red-700 p-1"
                     title="Delete Game"
@@ -327,6 +436,92 @@ export const GameManagement: React.FC = () => {
           <GamepadIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">No games created yet</p>
           <p className="text-gray-500">Create your first game to get started</p>
+        </div>
+      )}
+
+      {/* Duplicate Game Modal */}
+      {showDuplicateModal && duplicatingGame && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Duplicate Game
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Duplicating: <strong>{duplicatingGame.title}</strong>
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              This will copy the game and all its puzzles and splash screens to a new city.
+            </p>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              handleDuplicateSubmit({
+                new_city_id: formData.get('new_city_id') as string,
+                new_title: formData.get('new_title') as string
+              });
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <MapPin className="inline h-4 w-4 mr-1" />
+                  New City
+                </label>
+                <select
+                  name="new_city_id"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select a city...</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}, {city.country}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Game Title
+                </label>
+                <input
+                  name="new_title"
+                  type="text"
+                  defaultValue={`${duplicatingGame.title} (Copy)`}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={isDuplicating}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                >
+                  {isDuplicating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Duplicating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Duplicate Game</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelDuplicate}
+                  disabled={isDuplicating}
+                  className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
