@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { supabase } from './lib/supabase';
 import { useGameStore } from './stores/gameStore';
 import { useContentStore } from './stores/contentStore';
@@ -189,6 +191,8 @@ function App() {
       </div>
       
       <Footer />
+      <Analytics />
+      <SpeedInsights />
     </Router>
   );
 }
