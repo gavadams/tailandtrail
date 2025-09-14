@@ -3,37 +3,13 @@
  * Content is managed through the admin panel
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Users, Clock, Trophy, ArrowRight, Star } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Play, Trophy, ArrowRight } from 'lucide-react';
 import { useContentStore } from '../../stores/contentStore';
-import { Game } from '../../types';
 
 export const Homepage: React.FC = () => {
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { getSetting } = useContentStore();
-
-  useEffect(() => {
-    loadGames();
-  }, []);
-
-  const loadGames = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('games')
-        .select('*')
-        .limit(3);
-
-      if (error) throw error;
-      setGames(data || []);
-    } catch (error) {
-      console.error('Failed to load games:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">
@@ -132,42 +108,6 @@ export const Homepage: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Games */}
-      {games.length > 0 && (
-        <section className="py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-yellow-200 mb-4">
-                Featured Adventures
-              </h2>
-              <p className="text-xl text-yellow-300 max-w-3xl mx-auto">
-                Choose from our collection of thrilling puzzle adventures
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {games.map((game) => (
-                <div key={game.id} className="bg-gray-800 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-shadow border border-yellow-600">
-                  <div className="mb-4">
-                    <span className="inline-block bg-green-700 text-yellow-200 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
-                      {game.theme}
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-bold text-yellow-200 mb-3">{game.title}</h3>
-                  <p className="text-yellow-300 mb-6 line-clamp-3">{game.description}</p>
-                  <Link
-                    to="/purchase"
-                    className="inline-flex items-center bg-green-700 hover:bg-green-800 text-yellow-100 font-bold px-4 py-2 rounded-lg transition-colors"
-                  >
-                    <span>Play Now</span>
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-green-600 to-green-700">

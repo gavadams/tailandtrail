@@ -3,11 +3,26 @@
  * These types define the structure of our data throughout the app
  */
 
+export interface City {
+  id: string;
+  name: string;
+  country: string;
+  state_province?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Game {
   id: string;
   title: string;
   description: string;
   theme: string;
+  city_id: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

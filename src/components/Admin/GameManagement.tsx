@@ -5,18 +5,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Game } from '../../types';
+import { Game, City } from '../../types';
 
 interface GameForm {
   title: string;
   description: string;
   theme: string;
+  city_id: string;
 }
 
 export const GameManagement: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +28,7 @@ export const GameManagement: React.FC = () => {
 
   useEffect(() => {
     loadGames();
+    loadCities();
   }, []);
 
   const loadGames = async () => {
@@ -33,7 +36,10 @@ export const GameManagement: React.FC = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('games')
-        .select('*')
+        .select(`
+          *,
+          cities (id, name, country)
+        `)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -42,6 +48,21 @@ export const GameManagement: React.FC = () => {
       setError('Failed to load games');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadCities = async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('cities')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (fetchError) throw fetchError;
+      setCities(data || []);
+    } catch (err) {
+      setError('Failed to load cities');
     }
   };
 
@@ -55,6 +76,7 @@ export const GameManagement: React.FC = () => {
             title: data.title,
             description: data.description,
             theme: data.theme,
+            city_id: data.city_id,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingGame.id);
@@ -67,7 +89,8 @@ export const GameManagement: React.FC = () => {
           .insert({
             title: data.title,
             description: data.description,
-            theme: data.theme
+            theme: data.theme,
+            city_id: data.city_id
           });
 
         if (insertError) throw insertError;
@@ -88,6 +111,7 @@ export const GameManagement: React.FC = () => {
     setValue('title', game.title);
     setValue('description', game.description);
     setValue('theme', game.theme);
+    setValue('city_id', game.city_id);
     setShowForm(true);
   };
 
@@ -190,6 +214,27 @@ export const GameManagement: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <MapPin className="inline h-4 w-4 mr-1" />
+                City
+              </label>
+              <select
+                {...register('city_id', { required: 'City is required' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select a city...</option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}, {city.country}
+                  </option>
+                ))}
+              </select>
+              {errors.city_id && (
+                <p className="text-red-600 text-sm mt-1">{errors.city_id.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Theme
               </label>
               <select
@@ -256,6 +301,13 @@ export const GameManagement: React.FC = () => {
               
               <h3 className="text-lg font-bold text-gray-900 mb-2">{game.title}</h3>
               <p className="text-gray-600 text-sm mb-3 line-clamp-2">{game.description}</p>
+              
+              <div className="mb-3">
+                <div className="flex items-center text-gray-600 text-sm mb-1">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  <span>{(game as any).cities?.name || 'No city assigned'}</span>
+                </div>
+              </div>
               
               <div className="flex items-center justify-between">
                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">

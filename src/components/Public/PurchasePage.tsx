@@ -6,15 +6,16 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { CreditCard, Mail, Shield, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { CreditCard, Mail, Shield, CheckCircle, AlertCircle, Loader, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Game } from '../../types';
+import { Game, City } from '../../types';
 import { useContentStore } from '../../stores/contentStore';
 import { getStripe, createPaymentIntent } from '../../lib/stripe';
 
 interface PurchaseForm {
   email: string;
   game_id: string;
+  city_id: string;
   opt_in_marketing: boolean;
 }
 
@@ -195,15 +196,9 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
         <>
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h3 className="font-bold text-amber-900 mb-2">Payment Details</h3>
-            {console.log('About to render PaymentElement with options:', {
-              layout: 'tabs'
-            })}
             <PaymentElement 
               onReady={() => console.log('PaymentElement is ready')}
-              onError={(error) => console.error('PaymentElement error:', error)}
-              onLoaderStart={() => console.log('PaymentElement loader started')}
             />
-            {console.log('PaymentElement rendered')}
           </div>
 
           <button
@@ -222,7 +217,9 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
 
 export const PurchasePage: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -234,6 +231,7 @@ export const PurchasePage: React.FC = () => {
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<PurchaseForm>();
   const watchGameId = watch('game_id');
+  const watchCityId = watch('city_id');
   const watchEmail = watch('email');
   const watchOptIn = watch('opt_in_marketing');
 
@@ -244,8 +242,16 @@ export const PurchasePage: React.FC = () => {
   console.log('Stripe promise:', stripePromise);
 
   useEffect(() => {
-    loadGames();
+    loadCities();
   }, []);
+
+  useEffect(() => {
+    if (watchCityId) {
+      const city = cities.find(c => c.id === watchCityId);
+      setSelectedCity(city || null);
+      loadGames(city?.id);
+    }
+  }, [watchCityId, cities]);
 
   useEffect(() => {
     if (watchGameId) {
@@ -288,12 +294,35 @@ export const PurchasePage: React.FC = () => {
     }
   }, [showStripeForm, selectedGame, watchEmail, getSetting]);
 
-  const loadGames = async () => {
+  const loadCities = async () => {
     try {
       const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCities(data || []);
+    } catch (error) {
+      console.error('Failed to load cities:', error);
+      setError('Failed to load available cities');
+    }
+  };
+
+  const loadGames = async (cityId?: string) => {
+    try {
+      let query = supabase
         .from('games')
         .select('*')
+        .eq('is_active', true)
         .order('title');
+
+      if (cityId) {
+        query = query.eq('city_id', cityId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setGames(data || []);
@@ -303,7 +332,12 @@ export const PurchasePage: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (data: PurchaseForm) => {
+  const handleFormSubmit = (_data: PurchaseForm) => {
+    if (!selectedCity) {
+      setError('Please select a city');
+      return;
+    }
+
     if (!selectedGame) {
       setError('Please select a game');
       return;
@@ -383,13 +417,37 @@ export const PurchasePage: React.FC = () => {
               <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-amber-900 mb-2">
+                    <MapPin className="inline h-4 w-4 mr-1" />
+                    Choose City
+                  </label>
+                  <select
+                    {...register('city_id', { required: 'Please select a city' })}
+                    className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+                  >
+                    <option value="">Select a city...</option>
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}, {city.country}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.city_id && (
+                    <p className="text-red-600 text-sm mt-1">{errors.city_id.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-amber-900 mb-2">
                     Choose Game
                   </label>
                   <select
                     {...register('game_id', { required: 'Please select a game' })}
                     className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+                    disabled={!selectedCity}
                   >
-                    <option value="">Select a game...</option>
+                    <option value="">
+                      {selectedCity ? 'Select a game...' : 'Please select a city first'}
+                    </option>
                     {games.map((game) => (
                       <option key={game.id} value={game.id}>
                         {game.title} - £{getSetting('game_price', '20.00')}
@@ -398,6 +456,11 @@ export const PurchasePage: React.FC = () => {
                   </select>
                   {errors.game_id && (
                     <p className="text-red-600 text-sm mt-1">{errors.game_id.message}</p>
+                  )}
+                  {selectedCity && games.length === 0 && (
+                    <p className="text-amber-600 text-sm mt-1">
+                      No games available in {selectedCity.name}
+                    </p>
                   )}
                 </div>
 

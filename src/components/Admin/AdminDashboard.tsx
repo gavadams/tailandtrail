@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp } from 'lucide-react';
+import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin } from 'lucide-react';
 import { Header } from '../Layout/Header';
 import { GameManagement } from './GameManagement';
 import { PuzzleManagement } from './PuzzleManagement';
@@ -13,9 +13,10 @@ import { ContentManagement } from './ContentManagement';
 import { SplashScreenManagement } from './SplashScreenManagement';
 import { PurchaseManagement } from './PurchaseManagement';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { LocationManagement } from './LocationManagement';
 import { supabase, signOut } from '../../lib/supabase';
 
-type AdminView = 'overview' | 'games' | 'puzzles' | 'codes' | 'content' | 'splash' | 'purchases' | 'analytics';
+type AdminView = 'overview' | 'games' | 'puzzles' | 'codes' | 'content' | 'splash' | 'purchases' | 'analytics' | 'locations';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -93,6 +94,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'puzzles' as AdminView, label: 'Puzzles', icon: Puzzle },
     { id: 'codes' as AdminView, label: 'Access Codes', icon: Key },
     { id: 'analytics' as AdminView, label: 'Analytics', icon: TrendingUp },
+    { id: 'locations' as AdminView, label: 'Locations', icon: MapPin },
     { id: 'content' as AdminView, label: 'Content', icon: Users },
     { id: 'splash' as AdminView, label: 'Splash Screens', icon: Users },
     { id: 'purchases' as AdminView, label: 'Purchases', icon: Users }
@@ -114,6 +116,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         return <PurchaseManagement />;
       case 'analytics':
         return <AnalyticsDashboard />;
+      case 'locations':
+        return <LocationManagement />;
       case 'overview':
       default:
         return (
