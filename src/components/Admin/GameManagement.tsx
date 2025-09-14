@@ -14,6 +14,7 @@ interface GameForm {
   description: string;
   theme: string;
   city_id: string;
+  is_active: boolean;
 }
 
 export const GameManagement: React.FC = () => {
@@ -27,7 +28,11 @@ export const GameManagement: React.FC = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<GameForm>();
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<GameForm>({
+    defaultValues: {
+      is_active: true
+    }
+  });
 
   useEffect(() => {
     loadGames();
@@ -80,6 +85,7 @@ export const GameManagement: React.FC = () => {
             description: data.description,
             theme: data.theme,
             city_id: data.city_id,
+            is_active: data.is_active,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingGame.id);
@@ -93,7 +99,8 @@ export const GameManagement: React.FC = () => {
             title: data.title,
             description: data.description,
             theme: data.theme,
-            city_id: data.city_id
+            city_id: data.city_id,
+            is_active: data.is_active
           });
 
         if (insertError) throw insertError;
@@ -115,6 +122,7 @@ export const GameManagement: React.FC = () => {
     setValue('description', game.description);
     setValue('theme', game.theme);
     setValue('city_id', game.city_id);
+    setValue('is_active', game.is_active);
     setShowForm(true);
   };
 
@@ -153,16 +161,17 @@ export const GameManagement: React.FC = () => {
     setIsDuplicating(true);
     try {
       // First, create the new game
-      const { data: newGame, error: gameError } = await supabase
-        .from('games')
-        .insert({
-          title: data.new_title,
-          description: duplicatingGame.description,
-          theme: duplicatingGame.theme,
-          city_id: data.new_city_id
-        })
-        .select()
-        .single();
+        const { data: newGame, error: gameError } = await supabase
+          .from('games')
+          .insert({
+            title: data.new_title,
+            description: duplicatingGame.description,
+            theme: duplicatingGame.theme,
+            city_id: data.new_city_id,
+            is_active: true // New games are active by default
+          })
+          .select()
+          .single();
 
       if (gameError) throw gameError;
 
@@ -357,6 +366,22 @@ export const GameManagement: React.FC = () => {
               )}
             </div>
 
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  {...register('is_active')}
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Game is active (available for new purchases)
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Inactive games won't appear in purchase dropdown but existing access codes will still work
+              </p>
+            </div>
+
             <div className="flex space-x-3">
               <button
                 type="submit"
@@ -419,9 +444,18 @@ export const GameManagement: React.FC = () => {
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                  {game.theme}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    {game.theme}
+                  </span>
+                  <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                    game.is_active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {game.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
                 <span className="text-gray-500 text-xs">
                   {new Date(game.created_at).toLocaleDateString()}
                 </span>
