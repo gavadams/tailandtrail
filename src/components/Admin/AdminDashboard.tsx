@@ -227,7 +227,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showAdminControls onLogout={handleLogout} />
+      <Header showAdminControls onLogout={handleLogout} hideBranding={true} />
       
       <div className="flex">
         {/* Sidebar */}
