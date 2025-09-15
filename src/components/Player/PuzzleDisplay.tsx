@@ -14,7 +14,11 @@ interface AnswerForm {
   answer: string;
 }
 
-export const PuzzleDisplay: React.FC = () => {
+interface PuzzleDisplayProps {
+  onPuzzleComplete?: (puzzleId: string) => void;
+}
+
+export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }) => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [puzzleStartTime, setPuzzleStartTime] = useState<Date | null>(null);
@@ -128,6 +132,11 @@ export const PuzzleDisplay: React.FC = () => {
       });
 
       setShowAnswer(true);
+      
+      // Call onPuzzleComplete callback if provided (for test mode)
+      if (onPuzzleComplete) {
+        onPuzzleComplete(currentPuzzle.id);
+      }
       
       // Scroll to top to show success message
       window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -18,12 +18,14 @@ export const PlayerGame: React.FC = () => {
   const [showSplash, setShowSplash] = useState(false);
   const [splashScreens, setSplashScreens] = useState<SplashScreenType[]>([]);
   const [splashQueue, setSplashQueue] = useState<SplashScreenType[]>([]);
+  const [testModeViewedSplashes, setTestModeViewedSplashes] = useState<string[]>([]);
   const {
     currentSession,
     currentGame,
     puzzles,
     currentPuzzle,
     accessCode,
+    isTestMode,
     setCurrentPuzzle,
     clearSession,
     setError,
@@ -55,9 +57,29 @@ export const PlayerGame: React.FC = () => {
   };
 
   useEffect(() => {
+    // Handle test mode
+    if (isTestMode && puzzles.length > 0) {
+      // In test mode, check for splash screens first (just like real players)
+      // Only check if we're not already showing a splash screen
+      if (!showSplash) {
+        checkForPendingSplashScreens();
+      }
+      
+      // Only set puzzle if no splash screens are pending
+      if (!showSplash && !currentPuzzle) {
+        setCurrentPuzzle(puzzles[0]);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // Handle normal player mode
     if (currentSession && puzzles.length > 0) {
       // First check for pending splash screens before setting puzzle
-      checkForPendingSplashScreens();
+      // Only check if we're not already showing a splash screen
+      if (!showSplash) {
+        checkForPendingSplashScreens();
+      }
       
       // Only set puzzle if no splash screens are pending
       if (!showSplash) {
@@ -78,7 +100,7 @@ export const PlayerGame: React.FC = () => {
           puzzleToShow = puzzles[puzzles.length - 1];
         }
         
-        setCurrentPuzzle(puzzleToShow);
+        setCurrentPuzzle(puzzleToShow || null);
       }
       
       setIsLoading(false);
@@ -90,46 +112,75 @@ export const PlayerGame: React.FC = () => {
           setIsLoading(false);
         }
       }, 1000); // Give time for puzzles to load
-    } else if (!currentSession && !isLoading) {
+    } else if (!currentSession && !isTestMode && !isLoading) {
       setTimeout(() => {
-        if (!currentSession) {
+        if (!currentSession && !isTestMode) {
           setError('No active game session found.');
           setIsLoading(false);
         }
       }, 1000); // Give time for session to load
     }
-  }, [currentSession, puzzles, splashScreens, showSplash, setCurrentPuzzle, setError]);
+  }, [currentSession, puzzles, splashScreens, setCurrentPuzzle, setError, isTestMode, currentPuzzle, showSplash]);
 
   const checkForPendingSplashScreens = () => {
-    if (!currentSession || splashScreens.length === 0) {
+    if ((!currentSession && !isTestMode) || splashScreens.length === 0) {
       return;
     }
 
-    const viewedSplashes = currentSession.session_data?.viewedSplashes || [];
+    const viewedSplashes = isTestMode ? [] : (currentSession?.session_data?.viewedSplashes || []);
     let pendingSplashes: SplashScreenType[] = [];
     
-    // First, check for intro splash screens (no puzzle_id)
-    const introSplashes = splashScreens
-      .filter(s => !s.puzzle_id)
-      .sort((a, b) => a.sequence_order - b.sequence_order);
-    
-    const unviewedIntroSplashes = introSplashes.filter(s => !viewedSplashes.includes(s.id));
-    
-    if (unviewedIntroSplashes.length > 0) {
-      pendingSplashes = unviewedIntroSplashes;
-    } else {
-      // If all intro splashes are viewed, check for puzzle-specific splashes
-      const nextPuzzle = puzzles.find(p => !currentSession.completed_puzzles.includes(p.id));
+    if (isTestMode) {
+      // In test mode, show splash screens that haven't been viewed yet
+      // First, check for intro splash screens (no puzzle_id)
+      const introSplashes = splashScreens
+        .filter(s => !s.puzzle_id)
+        .sort((a, b) => a.sequence_order - b.sequence_order);
       
-      if (nextPuzzle) {
-        const puzzleSplashes = splashScreens
-          .filter(s => s.puzzle_id === nextPuzzle.id)
-          .sort((a, b) => a.sequence_order - b.sequence_order);
+      const unviewedIntroSplashes = introSplashes.filter(s => !testModeViewedSplashes.includes(s.id));
+      
+      if (unviewedIntroSplashes.length > 0) {
+        pendingSplashes = unviewedIntroSplashes;
+      } else {
+        // If all intro splashes are viewed, check for puzzle-specific splashes for the first puzzle
+        const firstPuzzle = puzzles[0];
+        if (firstPuzzle) {
+          const puzzleSplashes = splashScreens
+            .filter(s => s.puzzle_id === firstPuzzle.id)
+            .sort((a, b) => a.sequence_order - b.sequence_order);
+          
+          const unviewedPuzzleSplashes = puzzleSplashes.filter(s => !testModeViewedSplashes.includes(s.id));
+          
+          if (unviewedPuzzleSplashes.length > 0) {
+            pendingSplashes = unviewedPuzzleSplashes;
+          }
+        }
+      }
+    } else {
+      // Normal player mode - only show unviewed splash screens
+      // First, check for intro splash screens (no puzzle_id)
+      const introSplashes = splashScreens
+        .filter(s => !s.puzzle_id)
+        .sort((a, b) => a.sequence_order - b.sequence_order);
+      
+      const unviewedIntroSplashes = introSplashes.filter(s => !viewedSplashes.includes(s.id));
+      
+      if (unviewedIntroSplashes.length > 0) {
+        pendingSplashes = unviewedIntroSplashes;
+      } else {
+        // If all intro splashes are viewed, check for puzzle-specific splashes
+        const nextPuzzle = puzzles.find(p => !currentSession?.completed_puzzles.includes(p.id));
         
-        const unviewedPuzzleSplashes = puzzleSplashes.filter(s => !viewedSplashes.includes(s.id));
-        
-        if (unviewedPuzzleSplashes.length > 0) {
-          pendingSplashes = unviewedPuzzleSplashes;
+        if (nextPuzzle) {
+          const puzzleSplashes = splashScreens
+            .filter(s => s.puzzle_id === nextPuzzle.id)
+            .sort((a, b) => a.sequence_order - b.sequence_order);
+          
+          const unviewedPuzzleSplashes = puzzleSplashes.filter(s => !viewedSplashes.includes(s.id));
+          
+          if (unviewedPuzzleSplashes.length > 0) {
+            pendingSplashes = unviewedPuzzleSplashes;
+          }
         }
       }
     }
@@ -144,24 +195,29 @@ export const PlayerGame: React.FC = () => {
 
 
   const handleSplashContinue = async () => {
-    if (currentSplash && currentSession) {
-      // Mark splash as viewed
-      const viewedSplashes = currentSession.session_data?.viewedSplashes || [];
-      const updatedSessionData = {
-        ...currentSession.session_data,
-        viewedSplashes: [...viewedSplashes, currentSplash.id]
-      };
+    if (currentSplash) {
+      if (isTestMode) {
+        // In test mode, track viewed splash screens locally
+        setTestModeViewedSplashes(prev => [...prev, currentSplash.id]);
+      } else if (currentSession) {
+        // Mark splash as viewed in normal mode
+        const viewedSplashes = currentSession.session_data?.viewedSplashes || [];
+        const updatedSessionData = {
+          ...currentSession.session_data,
+          viewedSplashes: [...viewedSplashes, currentSplash.id]
+        };
 
-      await supabase
-        .from('player_sessions')
-        .update({ session_data: updatedSessionData })
-        .eq('id', currentSession.id);
-      
-      // Update local session data
-      setSession({
-        ...currentSession,
-        session_data: updatedSessionData
-      });
+        await supabase
+          .from('player_sessions')
+          .update({ session_data: updatedSessionData })
+          .eq('id', currentSession.id);
+        
+        // Update local session data
+        setSession({
+          ...currentSession,
+          session_data: updatedSessionData
+        });
+      }
     }
 
     // Check if there are more splash screens in the queue
@@ -176,6 +232,41 @@ export const PlayerGame: React.FC = () => {
       setShowSplash(false);
       setCurrentSplash(null);
       setSplashQueue([]);
+      
+      // In test mode, make sure we have a puzzle to show
+      if (isTestMode && !currentPuzzle && puzzles.length > 0) {
+        setCurrentPuzzle(puzzles[0]);
+      }
+    }
+  };
+
+  // Function to handle moving to next puzzle in test mode
+  const handleNextPuzzle = (completedPuzzleId: string) => {
+    if (!isTestMode) return;
+    
+    const currentIndex = puzzles.findIndex(p => p.id === completedPuzzleId);
+    const nextPuzzle = puzzles[currentIndex + 1];
+    
+    if (nextPuzzle) {
+      // Check for splash screens before the next puzzle
+      const puzzleSplashes = splashScreens
+        .filter(s => s.puzzle_id === nextPuzzle.id)
+        .sort((a, b) => a.sequence_order - b.sequence_order);
+      
+      const unviewedPuzzleSplashes = puzzleSplashes.filter(s => !testModeViewedSplashes.includes(s.id));
+      
+      if (unviewedPuzzleSplashes.length > 0) {
+        // Show splash screens first
+        setSplashQueue(unviewedPuzzleSplashes);
+        setCurrentSplash(unviewedPuzzleSplashes[0]);
+        setShowSplash(true);
+      } else {
+        // No splash screens, go directly to next puzzle
+        setCurrentPuzzle(nextPuzzle);
+      }
+    } else {
+      // No more puzzles, game completed
+      setCurrentPuzzle(null);
     }
   };
 
@@ -341,7 +432,7 @@ export const PlayerGame: React.FC = () => {
           </div>
         ) : (
           // Active Game Display
-          <PuzzleDisplay />
+          <PuzzleDisplay onPuzzleComplete={isTestMode ? handleNextPuzzle : undefined} />
         )}
       </div>
       

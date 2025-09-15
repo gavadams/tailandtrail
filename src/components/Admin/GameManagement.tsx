@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy } from 'lucide-react';
+import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy, Play } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Game, City } from '../../types';
 
@@ -250,6 +250,11 @@ export const GameManagement: React.FC = () => {
     setDuplicatingGame(null);
   };
 
+  const handleTestGame = (gameId: string) => {
+    // Navigate to test game route - this will be secure as it requires admin authentication
+    window.open(`/test-game/${gameId}`, '_blank');
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-12">
@@ -409,6 +414,13 @@ export const GameManagement: React.FC = () => {
               <div className="flex items-start justify-between mb-3">
                 <GamepadIcon className="h-8 w-8 text-blue-600" />
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleTestGame(game.id)}
+                    className="text-purple-600 hover:text-purple-700 p-1"
+                    title="Test Game"
+                  >
+                    <Play className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleEditGame(game)}
                     className="text-blue-600 hover:text-blue-700 p-1"

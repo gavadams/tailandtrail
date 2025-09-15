@@ -20,6 +20,7 @@ import { AccessCodeInput } from './components/Player/AccessCodeInput';
 import { PlayerGame } from './components/Player/PlayerGame';
 import { AdminLogin } from './components/Admin/AdminLogin';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
+import { TestGame } from './components/Admin/TestGame';
 import { HowItWorksPage } from './components/Public/HowItWorksPage';
 import { FAQPage } from './components/Public/FAQPage';
 import { ContactPage } from './components/Public/ContactPage';
@@ -181,6 +182,18 @@ function App() {
                 <AdminDashboard onLogout={handleAdminLogout} />
               ) : (
                 <AdminLogin onLogin={handleAdminLogin} />
+              )
+            }
+          />
+
+          {/* Test Game Route - Admin Only */}
+          <Route
+            path="/test-game/:gameId"
+            element={
+              isAdminAuthenticated ? (
+                <TestGame />
+              ) : (
+                <Navigate to="/admin" replace />
               )
             }
           />

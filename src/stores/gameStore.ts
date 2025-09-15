@@ -13,21 +13,25 @@ interface GameState {
   currentGame: Game | null;
   currentPuzzle: Puzzle | null;
   puzzles: Puzzle[];
+  splashScreens: any[];
   accessCode: AccessCode | null;
   
   // UI state
   isLoading: boolean;
   error: string | null;
   revealedClues: number;
+  isTestMode: boolean;
   
   // Actions
   setSession: (session: PlayerSession) => void;
   setGame: (game: Game) => void;
   setPuzzles: (puzzles: Puzzle[]) => void;
+  setSplashScreens: (splashScreens: any[]) => void;
   setCurrentPuzzle: (puzzle: Puzzle | null) => void;
   setAccessCode: (code: AccessCode) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setTestMode: (isTestMode: boolean) => void;
   revealNextClue: () => void;
   resetClues: () => void;
   markPuzzleComplete: (puzzleId: string) => void;
@@ -41,18 +45,22 @@ export const useGameStore = create<GameState>()(
       currentGame: null,
       currentPuzzle: null,
       puzzles: [],
+      splashScreens: [],
       accessCode: null,
       isLoading: false,
       error: null,
       revealedClues: 0,
+      isTestMode: false,
 
       setSession: (session) => set({ currentSession: session }),
       setGame: (game) => set({ currentGame: game }),
       setPuzzles: (puzzles) => set({ puzzles }),
+      setSplashScreens: (splashScreens) => set({ splashScreens }),
       setCurrentPuzzle: (puzzle) => set({ currentPuzzle: puzzle, revealedClues: 0 }),
       setAccessCode: (code) => set({ accessCode: code }),
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error }),
+      setTestMode: (isTestMode) => set({ isTestMode }),
       
       revealNextClue: () => {
         const { currentPuzzle, revealedClues } = get();
@@ -81,9 +89,11 @@ export const useGameStore = create<GameState>()(
         currentGame: null,
         currentPuzzle: null,
         puzzles: [],
+        splashScreens: [],
         accessCode: null,
         revealedClues: 0,
-        error: null
+        error: null,
+        isTestMode: false
       })
     }),
     {
