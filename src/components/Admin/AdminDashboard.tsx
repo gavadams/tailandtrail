@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin } from 'lucide-react';
+import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin, ExternalLink } from 'lucide-react';
 import { Header } from '../Layout/Header';
 import { GameManagement } from './GameManagement';
 import { PuzzleManagement } from './PuzzleManagement';
@@ -92,12 +92,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'overview' as AdminView, label: 'Overview', icon: BarChart3 },
     { id: 'games' as AdminView, label: 'Games', icon: GamepadIcon },
     { id: 'puzzles' as AdminView, label: 'Puzzles', icon: Puzzle },
-    { id: 'codes' as AdminView, label: 'Access Codes', icon: Key },
-    { id: 'analytics' as AdminView, label: 'Analytics', icon: TrendingUp },
-    { id: 'locations' as AdminView, label: 'Locations', icon: MapPin },
-    { id: 'content' as AdminView, label: 'Content', icon: Users },
     { id: 'splash' as AdminView, label: 'Splash Screens', icon: Users },
-    { id: 'purchases' as AdminView, label: 'Purchases', icon: Users }
+    { id: 'locations' as AdminView, label: 'Locations', icon: MapPin },
+    { id: 'codes' as AdminView, label: 'Access Codes', icon: Key },
+    { id: 'purchases' as AdminView, label: 'Purchases', icon: Users },
+    { id: 'analytics' as AdminView, label: 'Analytics', icon: TrendingUp },
+    { id: 'content' as AdminView, label: 'Content', icon: Users }
+  ];
+
+  const externalLinks = [
+    { 
+      label: 'Generator', 
+      icon: ExternalLink, 
+      url: 'https://tailandtrailgenerator.vercel.app/',
+      description: 'Remote Generator'
+    }
   ];
 
   const renderCurrentView = () => {
@@ -251,6 +260,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   </button>
                 );
               })}
+              
+              {/* External Links */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 px-4">
+                  External Tools
+                </p>
+                {externalLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{link.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </nav>
         </div>
