@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Mail, Calendar, TrendingUp, Download, Eye } from 'lucide-react';
+import { BadgePoundSterling, Mail, Calendar, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Purchase, Game } from '../../types';
 
@@ -106,7 +106,7 @@ export const PurchaseManagement: React.FC = () => {
               <p className="text-sm font-medium text-gray-500">Total Revenue</p>
               <p className="text-3xl font-bold text-gray-900">£{stats.totalRevenue.toFixed(2)}</p>
             </div>
-            <DollarSign className="h-10 w-10 text-green-600" />
+            <BadgePoundSterling className="h-10 w-10 text-green-600" />
           </div>
         </div>
         
@@ -138,7 +138,7 @@ export const PurchaseManagement: React.FC = () => {
               <p className="text-sm font-medium text-gray-500">Avg Order Value</p>
               <p className="text-3xl font-bold text-gray-900">£{stats.averageOrderValue.toFixed(2)}</p>
             </div>
-            <DollarSign className="h-10 w-10 text-orange-600" />
+            <BadgePoundSterling className="h-10 w-10 text-orange-600" />
           </div>
         </div>
       </div>
