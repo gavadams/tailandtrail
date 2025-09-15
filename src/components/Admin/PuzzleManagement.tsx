@@ -5,11 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { Plus, Edit3, Trash2, Puzzle as PuzzleIcon, ArrowUp, ArrowDown, AlertCircle, MapPin } from 'lucide-react';
+import { Plus, Edit3, Trash2, Puzzle as PuzzleIcon, ArrowUp, ArrowDown, AlertCircle, MapPin, X } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
-import type { Game, Puzzle } from '../../types';
+import type { Game, Puzzle, SplashScreen } from '../../types';
+
 
 interface PuzzleForm {
   title: string;
@@ -32,6 +33,9 @@ export const PuzzleManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Splash screen states
+  const [splashScreens, setSplashScreens] = useState<SplashScreen[]>([]);
 
   // Rich text editor states
   const [puzzleDescription, setPuzzleDescription] = useState('');
@@ -55,7 +59,6 @@ export const PuzzleManagement: React.FC = () => {
     name: "answer_options"
   });
 
-  const watchGameId = watch("game_id");
   const watchAnswerType = watch("answer_type");
 
   useEffect(() => {
@@ -65,8 +68,10 @@ export const PuzzleManagement: React.FC = () => {
   useEffect(() => {
     if (selectedGameId) {
       loadPuzzlesForGame(selectedGameId);
+      loadSplashScreensForGame(selectedGameId);
     } else {
       setPuzzles([]);
+      setSplashScreens([]);
     }
   }, [selectedGameId]);
 
@@ -102,6 +107,25 @@ export const PuzzleManagement: React.FC = () => {
       setPuzzles(data || []);
     } catch (err) {
       setError('Failed to load puzzles');
+    }
+  };
+
+  const loadSplashScreensForGame = async (gameId: string) => {
+    try {
+      console.log('Loading splash screens for game:', gameId);
+      const { data, error: fetchError } = await supabase
+        .from('splash_screens')
+        .select('*')
+        .eq('game_id', gameId)
+        .order('sequence_order');
+
+      if (fetchError) throw fetchError;
+      console.log('Loaded splash screens:', data);
+      console.log('Splash screen puzzle_ids:', data?.map(s => ({ id: s.id, title: s.title, puzzle_id: s.puzzle_id })));
+      setSplashScreens(data || []);
+    } catch (err) {
+      console.error('Error loading splash screens:', err);
+      setError('Failed to load splash screens');
     }
   };
 
@@ -235,6 +259,138 @@ export const PuzzleManagement: React.FC = () => {
       answer_options: [{ value: '' }],
       answer_type: 'text'
     });
+  };
+
+  // Splash screen handlers - positioning only (no creation/deletion)
+  const handleRepositionSplashScreen = async (splashScreenId: string, newPuzzleId: string | null | 'END') => {
+    try {
+      console.log('Repositioning splash screen:', splashScreenId, 'to:', newPuzzleId);
+      
+      const updateData = newPuzzleId === null ? { puzzle_id: null } : { puzzle_id: newPuzzleId };
+      
+      const { error } = await supabase
+        .from('splash_screens')
+        .update(updateData)
+        .eq('id', splashScreenId);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully repositioned splash screen');
+      // Small delay to ensure database has updated
+      setTimeout(() => {
+        loadSplashScreensForGame(selectedGameId);
+      }, 100);
+    } catch (err) {
+      console.error('Error repositioning splash screen:', err);
+      setError('Failed to reposition splash screen');
+    }
+  };
+
+  // Helper function to render splash screen section - full position control
+  const renderSplashSection = (puzzleId: string | null | 'END', title: string) => {
+    // Handle the 'END' case - we'll use a special marker for splash screens after the last puzzle
+    const actualPuzzleId = puzzleId === 'END' ? 'END' : puzzleId;
+    const positionSplashScreens = splashScreens.filter(s => s.puzzle_id === actualPuzzleId);
+    
+    console.log(`Rendering section for ${actualPuzzleId}:`, positionSplashScreens.map(s => ({ id: s.id, title: s.title, puzzle_id: s.puzzle_id })));
+    
+    // Get all splash screens for dropdown options
+    const allSplashScreens = splashScreens;
+    
+    return (
+      <div key={`splash-section-${actualPuzzleId}-${splashScreens.length}`} className="bg-gray-50 rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-gray-700">{title}</h4>
+          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+            {positionSplashScreens.length} splash screen{positionSplashScreens.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          {positionSplashScreens.map((splash) => (
+            <div key={splash.id} className="flex items-center space-x-2 p-2 bg-white rounded border">
+              <select
+                value={splash.id}
+                onChange={(e) => {
+                  const selectedSplashId = e.target.value;
+                  if (selectedSplashId === '') {
+                    // Remove splash screen from this position (unassign)
+                    handleRepositionSplashScreen(splash.id, null);
+                  } else if (selectedSplashId !== splash.id) {
+                    // Replace with different splash screen
+                    handleRepositionSplashScreen(selectedSplashId, actualPuzzleId);
+                    // Move the old splash screen to unassigned
+                    handleRepositionSplashScreen(splash.id, null);
+                  }
+                  // If selectedSplashId === splash.id, do nothing (same splash screen)
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+              >
+                <option value="">No splash screen</option>
+                {allSplashScreens.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} {
+                      s.puzzle_id === actualPuzzleId ? '(current)' :
+                      s.puzzle_id === null ? '(before puzzle 1)' :
+                      s.puzzle_id === 'END' ? '(after last puzzle)' :
+                      '(assigned elsewhere)'
+                    }
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => handleRepositionSplashScreen(splash.id, null)}
+                className="text-red-600 hover:text-red-700 p-1"
+                title="Remove from position"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <a
+                href={`#splash-management`}
+                className="text-blue-600 hover:text-blue-700 text-xs px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
+                title="Edit in Splash Screen Management"
+              >
+                Edit
+              </a>
+            </div>
+          ))}
+          
+          {/* Add new splash screen to this position */}
+          <div className="flex items-center space-x-2 p-2 border-2 border-dashed border-gray-300 rounded">
+            <select
+              value=""
+              onChange={(e) => {
+                const selectedSplashId = e.target.value;
+                if (selectedSplashId) {
+                  handleRepositionSplashScreen(selectedSplashId, actualPuzzleId);
+                }
+              }}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+            >
+              <option value="">Add splash screen to this position...</option>
+              {allSplashScreens.map((s) => {
+                // Skip splash screens already assigned to this position
+                if (s.puzzle_id === actualPuzzleId) return null;
+                
+                return (
+                  <option key={s.id} value={s.id}>
+                    {s.title} {
+                      s.puzzle_id === null ? '(before puzzle 1)' :
+                      s.puzzle_id === 'END' ? '(after last puzzle)' :
+                      '(assigned elsewhere)'
+                    }
+                  </option>
+                );
+              })}
+            </select>
+            <span className="text-xs text-gray-500">Add</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -583,18 +739,26 @@ export const PuzzleManagement: React.FC = () => {
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900">
-              Puzzles for {games.find(g => g.id === selectedGameId)?.title}
-            </h3>
+            Puzzles for {games.find(g => g.id === selectedGameId)?.title}
+          </h3>
             <p className="text-gray-600 text-sm mt-1 flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
               Location: {(games.find(g => g.id === selectedGameId) as any)?.cities?.name || 'No city assigned'}
             </p>
           </div>
           
+          {/* Splash screens before first puzzle */}
+          {renderSplashSection(null, 'Splashscreens')}
+          
           {puzzles.length > 0 ? (
             <div className="space-y-4">
               {puzzles.map((puzzle, index) => (
-                <div key={puzzle.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={puzzle.id}>
+                  {/* Splash screens between puzzles */}
+                  {index > 0 && renderSplashSection(puzzle.id, 'Splashscreens')}
+                  
+                  {/* Puzzle */}
+                  <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
@@ -654,11 +818,15 @@ export const PuzzleManagement: React.FC = () => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
+              
+              {/* Splash screens after last puzzle */}
+              {renderSplashSection('END', 'Splashscreens')}
             </div>
           ) : (
             <div className="text-center py-8">

@@ -108,7 +108,7 @@ export const SplashScreenManagement: React.FC = () => {
       const splashData = {
         ...data,
         content: splashContent,
-        puzzle_id: data.puzzle_id || null
+        puzzle_id: null // Always create as unassigned - position managed in Puzzle Management
       };
 
       if (editingSplash) {
@@ -152,7 +152,6 @@ export const SplashScreenManagement: React.FC = () => {
     setValue('image_url', splash.image_url || '');
     setValue('video_url', splash.video_url || '');
     setValue('game_id', splash.game_id);
-    setValue('puzzle_id', splash.puzzle_id || '');
     setValue('sequence_order', splash.sequence_order);
     setSplashContent(splash.content);
     setShowForm(true);
@@ -289,21 +288,13 @@ export const SplashScreenManagement: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Show Before Puzzle (Optional)
+                  Position
                 </label>
-                <select
-                  {...register('puzzle_id')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                >
-                  <option value="">Game Introduction (Before Puzzle 1)</option>
-                  {puzzles.map((puzzle) => (
-                    <option key={puzzle.id} value={puzzle.id}>
-                      Before Puzzle {puzzle.sequence_order}: {puzzle.title}
-                    </option>
-                  ))}
-                </select>
+                <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600">
+                  Position is managed in Puzzle Management
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to show at game start. Multiple splash screens will play in sequence order.
+                  Use Puzzle Management to assign this splash screen to specific positions.
                 </p>
               </div>
             </div>
