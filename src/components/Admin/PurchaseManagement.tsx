@@ -104,7 +104,7 @@ export const PurchaseManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-              <p className="text-3xl font-bold text-gray-900">${stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-gray-900">£{stats.totalRevenue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-10 w-10 text-green-600" />
           </div>
@@ -136,7 +136,7 @@ export const PurchaseManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Avg Order Value</p>
-              <p className="text-3xl font-bold text-gray-900">${stats.averageOrderValue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-gray-900">£{stats.averageOrderValue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-10 w-10 text-orange-600" />
           </div>
@@ -154,7 +154,7 @@ export const PurchaseManagement: React.FC = () => {
                 <p className="text-sm text-gray-500">{stat.game.theme}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-gray-900">${stat.revenue.toFixed(2)}</p>
+                <p className="font-bold text-gray-900">£{stat.revenue.toFixed(2)}</p>
                 <p className="text-sm text-gray-500">{stat.purchases} purchases</p>
               </div>
             </div>
@@ -208,7 +208,7 @@ export const PurchaseManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900">
-                      ${(purchase.amount / 100).toFixed(2)}
+                      £{(purchase.amount / 100).toFixed(2)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
