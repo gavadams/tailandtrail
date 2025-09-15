@@ -23,6 +23,8 @@ export interface Game {
   theme: string;
   city_id: string;
   is_active: boolean;
+  game_tested: boolean;
+  content_tested: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy, Play } from 'lucide-react';
+import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy, Play, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Game, City } from '../../types';
 
@@ -15,6 +15,8 @@ interface GameForm {
   theme: string;
   city_id: string;
   is_active: boolean;
+  game_tested: boolean;
+  content_tested: boolean;
 }
 
 export const GameManagement: React.FC = () => {
@@ -30,7 +32,9 @@ export const GameManagement: React.FC = () => {
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<GameForm>({
     defaultValues: {
-      is_active: true
+      is_active: true,
+      game_tested: false,
+      content_tested: false
     }
   });
 
@@ -86,6 +90,8 @@ export const GameManagement: React.FC = () => {
             theme: data.theme,
             city_id: data.city_id,
             is_active: data.is_active,
+            game_tested: data.game_tested,
+            content_tested: data.content_tested,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingGame.id);
@@ -100,7 +106,9 @@ export const GameManagement: React.FC = () => {
             description: data.description,
             theme: data.theme,
             city_id: data.city_id,
-            is_active: data.is_active
+            is_active: data.is_active,
+            game_tested: data.game_tested,
+            content_tested: data.content_tested
           });
 
         if (insertError) throw insertError;
@@ -123,6 +131,8 @@ export const GameManagement: React.FC = () => {
     setValue('theme', game.theme);
     setValue('city_id', game.city_id);
     setValue('is_active', game.is_active);
+    setValue('game_tested', game.game_tested || false);
+    setValue('content_tested', game.content_tested || false);
     setShowForm(true);
   };
 
@@ -387,6 +397,38 @@ export const GameManagement: React.FC = () => {
               </p>
             </div>
 
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  {...register('game_tested')}
+                  type="checkbox"
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Game has been tested and confirmed good
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Confirm that the game mechanics and flow work correctly
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  {...register('content_tested')}
+                  type="checkbox"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Content has been tested and confirmed good
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Confirm that all puzzles, clues, and content are accurate and working
+              </p>
+            </div>
+
             <div className="flex space-x-3">
               <button
                 type="submit"
@@ -467,6 +509,26 @@ export const GameManagement: React.FC = () => {
                   }`}>
                     {game.is_active ? 'Active' : 'Inactive'}
                   </span>
+                  
+                  {/* Game Testing Status Icons */}
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex items-center space-x-1">
+                      {game.game_tested ? (
+                        <CheckCircle className="h-3 w-3 text-green-600" title="Game tested and confirmed good" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-red-500" title="Game not tested" />
+                      )}
+                      <span className="text-xs text-gray-600">Game</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      {game.content_tested ? (
+                        <CheckCircle className="h-3 w-3 text-purple-600" title="Content tested and confirmed good" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-red-500" title="Content not tested" />
+                      )}
+                      <span className="text-xs text-gray-600">Content</span>
+                    </div>
+                  </div>
                 </div>
                 <span className="text-gray-500 text-xs">
                   {new Date(game.created_at).toLocaleDateString()}
