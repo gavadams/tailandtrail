@@ -61,6 +61,7 @@ export interface PlayerSession {
   current_puzzle_id: string | null;
   completed_puzzles: string[]; // Array of completed puzzle IDs
   session_data: any; // Store puzzle progress, revealed clues, etc.
+  player_email?: string; // Player's email address
   last_activity: string;
   created_at: string;
 }

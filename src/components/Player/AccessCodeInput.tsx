@@ -39,6 +39,24 @@ export const AccessCodeInput: React.FC = () => {
         return;
       }
 
+      // Get email using edge function
+      let playerEmail: string | undefined;
+      try {
+        console.log('Fetching email for access_code_id:', codeData.id);
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('get-purchase-email', {
+          body: { access_code_id: codeData.id }
+        });
+        
+        if (emailError) {
+          console.error('Error fetching email:', emailError);
+        } else if (emailData?.email) {
+          playerEmail = emailData.email;
+          console.log('Found email via edge function:', playerEmail);
+        }
+      } catch (err) {
+        console.error('Edge function call failed:', err);
+      }
+
       // Check if code is already activated and expired
       if (codeData.activated_at) {
         const activatedTime = new Date(codeData.activated_at);
@@ -120,6 +138,7 @@ export const AccessCodeInput: React.FC = () => {
         sessionData = updated || existingSession;
       } else {
         // Create new session
+        console.log('Creating session with email:', playerEmail);
         const { data: newSession, error: sessionError } = await supabase
           .from('player_sessions')
           .insert({
@@ -128,6 +147,7 @@ export const AccessCodeInput: React.FC = () => {
             current_puzzle_id: puzzlesData[0]?.id || null,
             completed_puzzles: [],
             session_data: {},
+            player_email: playerEmail,
             last_activity: new Date().toISOString()
           })
           .select()

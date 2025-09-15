@@ -53,8 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout, hid
             )}
             
             {currentSession && (
-              <div className="text-yellow-200 text-sm">
-                Progress: {currentSession.completed_puzzles.length} puzzles
+              <div className="text-yellow-200 text-sm space-y-1">
+                <div>Progress: {currentSession.completed_puzzles.length} puzzles</div>
+                {currentSession.player_email && (
+                  <div className="text-yellow-300 text-xs">
+                    Player email: {currentSession.player_email}
+                  </div>
+                )}
               </div>
             )}
 
