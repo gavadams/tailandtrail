@@ -51,7 +51,7 @@ export const Homepage: React.FC = () => {
               <div className="text-yellow-300 text-sm">Players</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
-              <div className="text-3xl font-bold text-yellow-200 mb-2">Many</div>
+              <div className="text-3xl font-bold text-yellow-200 mb-2">Many UK</div>
               <div className="text-yellow-300 text-sm">Locations</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
