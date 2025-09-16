@@ -3,8 +3,12 @@
  * Run this script when cities are added/removed
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // This would normally connect to your Supabase database
 // For now, we'll create a basic sitemap
