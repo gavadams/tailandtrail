@@ -276,14 +276,14 @@ export const GameManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Game Management</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Game Management</h2>
           <p className="text-gray-600 mt-1">Create and manage your puzzle games</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors font-medium"
         >
           <Plus className="h-4 w-4" />
           <span>New Game</span>
@@ -302,12 +302,12 @@ export const GameManagement: React.FC = () => {
 
       {/* Game Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 border">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
             {editingGame ? 'Edit Game' : 'Create New Game'}
           </h3>
           
-          <form onSubmit={handleSubmit(handleSaveGame)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleSaveGame)} className="space-y-4 sm:space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Game Title
@@ -429,17 +429,17 @@ export const GameManagement: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3">
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg transition-colors text-center font-medium"
               >
                 {editingGame ? 'Update Game' : 'Create Game'}
               </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 sm:py-2 rounded-lg transition-colors text-center font-medium"
               >
                 Cancel
               </button>
@@ -455,34 +455,34 @@ export const GameManagement: React.FC = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-3">
                 <GamepadIcon className="h-8 w-8 text-blue-600" />
-                <div className="flex space-x-2">
+                <div className="flex space-x-1 sm:space-x-2">
                   <button
                     onClick={() => handleTestGame(game.id)}
-                    className="text-purple-600 hover:text-purple-700 p-1"
+                    className="text-purple-600 hover:text-purple-700 p-2 sm:p-1 rounded-md hover:bg-purple-50 transition-colors"
                     title="Test Game"
                   >
-                    <Play className="h-4 w-4" />
+                    <Play className="h-4 w-4 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => handleEditGame(game)}
-                    className="text-blue-600 hover:text-blue-700 p-1"
+                    className="text-blue-600 hover:text-blue-700 p-2 sm:p-1 rounded-md hover:bg-blue-50 transition-colors"
                     title="Edit Game"
                   >
-                    <Edit3 className="h-4 w-4" />
+                    <Edit3 className="h-4 w-4 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => handleDuplicateGame(game)}
-                    className="text-green-600 hover:text-green-700 p-1"
+                    className="text-green-600 hover:text-green-700 p-2 sm:p-1 rounded-md hover:bg-green-50 transition-colors"
                     title="Duplicate Game"
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteGame(game.id)}
-                    className="text-red-600 hover:text-red-700 p-1"
+                    className="text-red-600 hover:text-red-700 p-2 sm:p-1 rounded-md hover:bg-red-50 transition-colors"
                     title="Delete Game"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
                   </button>
                 </div>
               </div>
@@ -550,8 +550,8 @@ export const GameManagement: React.FC = () => {
       {/* Duplicate Game Modal */}
       {showDuplicateModal && duplicatingGame && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
               Duplicate Game
             </h3>
             <p className="text-gray-600 mb-4">
@@ -601,11 +601,11 @@ export const GameManagement: React.FC = () => {
                 />
               </div>
 
-              <div className="flex space-x-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 pt-4">
                 <button
                   type="submit"
                   disabled={isDuplicating}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-3 sm:py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 font-medium"
                 >
                   {isDuplicating ? (
                     <>
@@ -623,7 +623,7 @@ export const GameManagement: React.FC = () => {
                   type="button"
                   onClick={handleCancelDuplicate}
                   disabled={isDuplicating}
-                  className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white px-4 py-3 sm:py-2 rounded-lg transition-colors font-medium"
                 >
                   Cancel
                 </button>

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin, ExternalLink } from 'lucide-react';
+import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin, ExternalLink, Menu, X } from 'lucide-react';
 import { Header } from '../Layout/Header';
 import { GameManagement } from './GameManagement';
 import { PuzzleManagement } from './PuzzleManagement';
@@ -32,6 +32,7 @@ interface DashboardStats {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [currentView, setCurrentView] = useState<AdminView>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     totalGames: 0,
     totalPuzzles: 0,
@@ -132,97 +133,97 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         return (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-white">
-              <h2 className="text-3xl font-bold mb-2">Welcome to Admin Dashboard</h2>
-              <p className="text-blue-100 text-lg">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 sm:p-8 text-white">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Welcome to Admin Dashboard</h2>
+              <p className="text-blue-100 text-base sm:text-lg">
                 Manage your Tale and Trail games, puzzles, and access codes from here.
               </p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Games</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalGames}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalGames}</p>
                   </div>
-                  <GamepadIcon className="h-10 w-10 text-blue-600" />
+                  <GamepadIcon className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Puzzles</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalPuzzles}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalPuzzles}</p>
                   </div>
-                  <Puzzle className="h-10 w-10 text-green-600" />
+                  <Puzzle className="h-8 w-8 sm:h-10 sm:w-10 text-green-600" />
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Access Codes</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalCodes}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalCodes}</p>
                     <p className="text-xs text-gray-500">{stats.activeCodes} active</p>
                   </div>
-                  <Key className="h-10 w-10 text-purple-600" />
+                  <Key className="h-8 w-8 sm:h-10 sm:w-10 text-purple-600" />
                 </div>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Used Codes</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.usedCodes}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.usedCodes}</p>
                     <p className="text-xs text-gray-500">
                       {stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}% usage
                     </p>
                   </div>
-                  <Users className="h-10 w-10 text-orange-600" />
+                  <Users className="h-8 w-8 sm:h-10 sm:w-10 text-orange-600" />
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={() => setCurrentView('games')}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all"
+                  className="p-4 sm:p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-center"
                 >
-                  <GamepadIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <p className="font-medium">Create New Game</p>
-                  <p className="text-sm text-gray-500">Start building a new puzzle experience</p>
+                  <GamepadIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mx-auto mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Create New Game</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Start building a new puzzle experience</p>
                 </button>
                 
                 <button
                   onClick={() => setCurrentView('puzzles')}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all"
+                  className="p-4 sm:p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all text-center"
                 >
-                  <Puzzle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <p className="font-medium">Add Puzzles</p>
-                  <p className="text-sm text-gray-500">Create challenges for your games</p>
+                  <Puzzle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Add Puzzles</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Create challenges for your games</p>
                 </button>
                 
                 <button
                   onClick={() => setCurrentView('codes')}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition-all"
+                  className="p-4 sm:p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition-all text-center"
                 >
-                  <Key className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <p className="font-medium">Generate Codes</p>
-                  <p className="text-sm text-gray-500">Create access codes for players</p>
+                  <Key className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mx-auto mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Generate Codes</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Create access codes for players</p>
                 </button>
               </div>
             </div>
 
             {/* Tips */}
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6">
-              <h3 className="text-lg font-bold text-yellow-800 mb-2">Getting Started Tips</h3>
-              <ul className="space-y-2 text-yellow-700">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-bold text-yellow-800 mb-2">Getting Started Tips</h3>
+              <ul className="space-y-2 text-sm sm:text-base text-yellow-700">
                 <li>• Create a game first, then add puzzles to it in the desired sequence</li>
                 <li>• Use progressive clues to help players when they get stuck</li>
                 <li>• Generate access codes after your game is ready for players</li>
@@ -239,16 +240,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       <Header showAdminControls onLogout={handleLogout} hideBranding={true} />
       
       <div className="flex flex-col lg:flex-row">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-md shadow-lg border border-gray-200"
+        >
+          {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+
         {/* Sidebar */}
-        <div className="w-full lg:w-64 bg-white shadow-lg lg:min-h-screen">
-          <nav className="p-4">
+        <div className={`w-full lg:w-64 bg-white shadow-lg lg:min-h-screen transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } fixed lg:relative z-40 lg:z-auto`}>
+          <nav className="p-4 pt-16 lg:pt-4">
             <div className="space-y-2">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentView(item.id)}
+                    onClick={() => {
+                      setCurrentView(item.id);
+                      setSidebarOpen(false); // Close sidebar on mobile after selection
+                    }}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       currentView === item.id
                         ? 'bg-blue-100 text-blue-700 font-medium'
@@ -285,6 +299,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             </div>
           </nav>
         </div>
+
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content */}
         <div className="flex-1 p-4 lg:p-8 overflow-x-auto">

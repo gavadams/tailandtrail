@@ -402,11 +402,11 @@ export const PuzzleManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Puzzle Management</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Puzzle Management</h2>
           <p className="text-gray-600 mt-1">Create and manage puzzles for your games</p>
         </div>
         <button
@@ -479,7 +479,7 @@ export const PuzzleManagement: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
                 Puzzle Title
               </label>
               <input

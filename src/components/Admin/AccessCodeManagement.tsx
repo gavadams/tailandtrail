@@ -282,7 +282,8 @@ export const AccessCodeManagement: React.FC = () => {
             </h3>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -365,6 +366,72 @@ export const AccessCodeManagement: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4 p-4">
+            {accessCodes.map((code) => {
+              const { status, color } = getCodeStatus(code);
+              return (
+                <div key={code.id} className="bg-white rounded-lg shadow border p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <code className="text-lg font-mono font-bold text-gray-900">
+                          {code.code}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(code.code)}
+                          className="text-gray-400 hover:text-gray-600 p-1"
+                          title="Copy to clipboard"
+                        >
+                          {copiedCode === code.code ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Copy className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                      <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
+                        color === 'gray' ? 'bg-gray-100 text-gray-800' :
+                        color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                        color === 'green' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {status}
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleDeactivateCode(code.id)}
+                        disabled={!code.is_active}
+                        className="text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed p-2"
+                        title="Deactivate Code"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Created:</span>
+                      <br />
+                      {new Date(code.created_at).toLocaleDateString()}
+                    </div>
+                    <div>
+                      <span className="font-medium">Activated:</span>
+                      <br />
+                      {code.activated_at ? new Date(code.activated_at).toLocaleString() : 'Not used'}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="font-medium">Expires:</span>
+                      <br />
+                      {code.expires_at ? new Date(code.expires_at).toLocaleString() : '-'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
