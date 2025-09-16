@@ -276,11 +276,11 @@ export const ThemeOverlayManagement: React.FC = () => {
 
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div className="flex items-center space-x-2">
           <Image className="h-6 w-6 text-blue-600" />
-          <h3 className="text-xl font-bold text-gray-900">Theme Overlay Management</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Theme Overlay Management</h3>
         </div>
         <div className="flex items-center space-x-2">
           <button

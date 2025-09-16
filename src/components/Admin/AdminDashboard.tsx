@@ -238,9 +238,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     <div className="min-h-screen bg-gray-50">
       <Header showAdminControls onLogout={handleLogout} hideBranding={true} />
       
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Sidebar */}
-        <div className="w-64 bg-white shadow-lg min-h-screen">
+        <div className="w-full lg:w-64 bg-white shadow-lg lg:min-h-screen">
           <nav className="p-4">
             <div className="space-y-2">
               {navigationItems.map((item) => {
@@ -287,7 +287,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 lg:p-8 overflow-x-auto">
           {renderCurrentView()}
         </div>
       </div>
