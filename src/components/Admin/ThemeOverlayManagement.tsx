@@ -15,6 +15,12 @@ interface ThemeOverlayForm {
   theme_overlay_opacity: number;
 }
 
+interface ThemeImage {
+  name: string;
+  filename: string;
+  url: string;
+}
+
 export const ThemeOverlayManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +28,8 @@ export const ThemeOverlayManagement: React.FC = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [, setSettingsExist] = useState<boolean | null>(null);
   const [isCustomUrl, setIsCustomUrl] = useState(false);
+  const [themeImages, setThemeImages] = useState<ThemeImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
 
   const { getSetting, refreshSettings } = useContentStore();
   
@@ -29,14 +37,51 @@ export const ThemeOverlayManagement: React.FC = () => {
 
   const watchedImageUrl = watch('theme_overlay_url');
 
-  // Available theme images
-  const themeImages = [
-    { name: 'Easter Theme', filename: 'easter.png', url: '/Images/Themes/easter.png' },
-    { name: 'Easter Basket Frame', filename: 'frame-from-easter-eggs-basket-table.jpg', url: '/Images/Themes/frame-from-easter-eggs-basket-table.jpg' },
-    { name: 'Halloween Bats', filename: 'black-silhouette-bats-isolated-transparent-background.png', url: '/Images/Themes/black-silhouette-bats-isolated-transparent-background.png' },
-    { name: 'Snow Animation 1', filename: 'snow02.gif', url: '/Images/Themes/snow02.gif' },
-    { name: 'Falling Snow', filename: 'falling snow.gif', url: '/Images/Themes/falling snow.gif' }
-  ];
+  // Fetch theme images from GitHub API
+  const fetchThemeImages = async () => {
+    try {
+      setLoadingImages(true);
+      const response = await fetch('https://api.github.com/repos/gavadams/tailandtrail/contents/Images/Themes');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch theme images');
+      }
+      
+      const files = await response.json();
+      
+      // Filter for image files and create theme image objects
+      const images: ThemeImage[] = files
+        .filter((file: any) => {
+          const extension = file.name.toLowerCase().split('.').pop();
+          return ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extension);
+        })
+        .map((file: any) => {
+          // Create a friendly name from filename
+          const name = file.name
+            .replace(/[-_]/g, ' ')
+            .replace(/\.[^/.]+$/, '') // Remove extension
+            .replace(/\b\w/g, (l: string) => l.toUpperCase()); // Capitalize words
+          
+          return {
+            name: name,
+            filename: file.name,
+            url: file.download_url
+          };
+        });
+      
+      setThemeImages(images);
+    } catch (err) {
+      console.error('Error fetching theme images:', err);
+      setError('Failed to load theme images from GitHub');
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch theme images on component mount
+    fetchThemeImages();
+  }, []);
 
   useEffect(() => {
     // Load current settings
@@ -324,9 +369,12 @@ export const ThemeOverlayManagement: React.FC = () => {
               <select
                 value={watchedImageUrl}
                 onChange={(e) => handleThemeImageSelect(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                disabled={loadingImages}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">Select a theme image...</option>
+                <option value="">
+                  {loadingImages ? 'Loading theme images...' : 'Select a theme image...'}
+                </option>
                 {themeImages.map((image) => (
                   <option key={image.url} value={image.url}>
                     {image.name}
@@ -334,7 +382,10 @@ export const ThemeOverlayManagement: React.FC = () => {
                 ))}
               </select>
               <p className="text-sm text-gray-500">
-                Choose from available theme images in the Images/Themes/ folder.
+                {loadingImages 
+                  ? 'Loading theme images from GitHub...' 
+                  : 'Choose from available theme images in the Images/Themes/ folder.'
+                }
               </p>
             </div>
           ) : (
