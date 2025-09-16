@@ -13,8 +13,6 @@ interface ThemeOverlayForm {
   theme_overlay_url: string;
   theme_overlay_enabled: boolean;
   theme_overlay_opacity: number;
-  theme_overlay_position: string;
-  theme_overlay_z_index: number;
 }
 
 export const ThemeOverlayManagement: React.FC = () => {
@@ -23,6 +21,7 @@ export const ThemeOverlayManagement: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [, setSettingsExist] = useState<boolean | null>(null);
+  const [isCustomUrl, setIsCustomUrl] = useState(false);
 
   const { getSetting, refreshSettings } = useContentStore();
   
@@ -30,20 +29,29 @@ export const ThemeOverlayManagement: React.FC = () => {
 
   const watchedImageUrl = watch('theme_overlay_url');
 
+  // Available theme images
+  const themeImages = [
+    { name: 'Easter Theme', filename: 'easter.png', url: '/Images/Themes/easter.png' },
+    { name: 'Easter Basket Frame', filename: 'frame-from-easter-eggs-basket-table.jpg', url: '/Images/Themes/frame-from-easter-eggs-basket-table.jpg' },
+    { name: 'Halloween Bats', filename: 'black-silhouette-bats-isolated-transparent-background.png', url: '/Images/Themes/black-silhouette-bats-isolated-transparent-background.png' },
+    { name: 'Snow Animation 1', filename: 'snow02.gif', url: '/Images/Themes/snow02.gif' },
+    { name: 'Falling Snow', filename: 'falling snow.gif', url: '/Images/Themes/falling snow.gif' }
+  ];
+
   useEffect(() => {
     // Load current settings
     const imageUrl = getSetting('theme_overlay_url', '');
     const enabled = getSetting('theme_overlay_enabled', 'false') === 'true';
     const opacity = parseFloat(getSetting('theme_overlay_opacity', '0.3'));
-    const position = getSetting('theme_overlay_position', 'fixed');
-    const zIndex = parseInt(getSetting('theme_overlay_z_index', '1000'));
+    
+    // Check if current URL is a custom URL (not in our theme images)
+    const isCustom = Boolean(imageUrl && !themeImages.some(img => img.url === imageUrl));
+    setIsCustomUrl(isCustom);
     
     reset({
       theme_overlay_url: imageUrl,
       theme_overlay_enabled: enabled,
-      theme_overlay_opacity: opacity,
-      theme_overlay_position: position,
-      theme_overlay_z_index: zIndex
+      theme_overlay_opacity: opacity
     });
 
     // Check if settings exist in database
@@ -55,14 +63,14 @@ export const ThemeOverlayManagement: React.FC = () => {
       const { data, error } = await supabase
         .from('site_settings')
         .select('key')
-        .in('key', ['theme_overlay_url', 'theme_overlay_enabled', 'theme_overlay_opacity', 'theme_overlay_position', 'theme_overlay_z_index']);
+        .in('key', ['theme_overlay_url', 'theme_overlay_enabled', 'theme_overlay_opacity']);
       
       if (error) {
         console.error('Error checking settings:', error);
         return;
       }
       
-      setSettingsExist(data?.length === 5);
+      setSettingsExist(data?.length === 3);
     } catch (err) {
       console.error('Error checking settings:', err);
     }
@@ -91,7 +99,7 @@ export const ThemeOverlayManagement: React.FC = () => {
       const { data: existingSettings, error: fetchError } = await supabase
         .from('site_settings')
         .select('*')
-        .in('key', ['theme_overlay_url', 'theme_overlay_enabled', 'theme_overlay_opacity', 'theme_overlay_position', 'theme_overlay_z_index']);
+        .in('key', ['theme_overlay_url', 'theme_overlay_enabled', 'theme_overlay_opacity']);
 
       console.log('Existing settings:', existingSettings);
 
@@ -192,63 +200,6 @@ export const ThemeOverlayManagement: React.FC = () => {
         if (opacityError) throw opacityError;
       }
 
-      // Update or insert theme overlay position
-      const positionSetting = existingSettings?.find(s => s.key === 'theme_overlay_position');
-      if (positionSetting) {
-        const { error: positionError } = await supabase
-          .from('site_settings')
-          .update({ 
-            value: data.theme_overlay_position,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', positionSetting.id)
-          .select();
-
-        if (positionError) throw positionError;
-      } else {
-        const { error: positionError } = await supabase
-          .from('site_settings')
-          .insert({
-            key: 'theme_overlay_position',
-            value: data.theme_overlay_position,
-            type: 'text',
-            category: 'theme',
-            label: 'Overlay Position',
-            description: 'CSS position for the overlay (fixed, absolute)'
-          })
-          .select();
-
-        if (positionError) throw positionError;
-      }
-
-      // Update or insert theme overlay z-index
-      const zIndexSetting = existingSettings?.find(s => s.key === 'theme_overlay_z_index');
-      if (zIndexSetting) {
-        const { error: zIndexError } = await supabase
-          .from('site_settings')
-          .update({ 
-            value: data.theme_overlay_z_index.toString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', zIndexSetting.id)
-          .select();
-
-        if (zIndexError) throw zIndexError;
-      } else {
-        const { error: zIndexError } = await supabase
-          .from('site_settings')
-          .insert({
-            key: 'theme_overlay_z_index',
-            value: data.theme_overlay_z_index.toString(),
-            type: 'number',
-            category: 'theme',
-            label: 'Overlay Z-Index',
-            description: 'Z-index for the overlay layer'
-          })
-          .select();
-
-        if (zIndexError) throw zIndexError;
-      }
 
       // Refresh the content store
       console.log('Refreshing content store...');
@@ -272,6 +223,12 @@ export const ThemeOverlayManagement: React.FC = () => {
       setValue('theme_overlay_enabled', false);
     }
   };
+
+  const handleThemeImageSelect = (imageUrl: string) => {
+    setValue('theme_overlay_url', imageUrl);
+    setIsCustomUrl(false);
+  };
+
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -329,111 +286,111 @@ export const ThemeOverlayManagement: React.FC = () => {
           </label>
         </div>
 
-        {/* Image URL Input */}
+        {/* Theme Image Selection */}
         <div>
-          <label htmlFor="theme_overlay_url" className="block text-sm font-medium text-gray-700 mb-2">
-            Theme Overlay Image URL
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Theme Overlay Image
           </label>
-          <input
-            type="url"
-            id="theme_overlay_url"
-            {...register('theme_overlay_url', {
-              required: 'Image URL is required when overlay is enabled',
-              pattern: {
-                value: /^https?:\/\/.+/,
-                message: 'Please enter a valid URL starting with http:// or https://'
-              }
-            })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="https://example.com/your-transparent-gif.gif"
-          />
-          {errors.theme_overlay_url && (
-            <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_url.message}</p>
+          
+          {/* Toggle between dropdown and custom URL */}
+          <div className="flex space-x-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setIsCustomUrl(false)}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                !isCustomUrl
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              Choose from Themes
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCustomUrl(true)}
+              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                isCustomUrl
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              Custom URL
+            </button>
+          </div>
+
+          {!isCustomUrl ? (
+            /* Theme Images Dropdown */
+            <div className="space-y-2">
+              <select
+                value={watchedImageUrl}
+                onChange={(e) => handleThemeImageSelect(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select a theme image...</option>
+                {themeImages.map((image) => (
+                  <option key={image.url} value={image.url}>
+                    {image.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-gray-500">
+                Choose from available theme images in the Images/Themes/ folder.
+              </p>
+            </div>
+          ) : (
+            /* Custom URL Input */
+            <div>
+              <input
+                type="url"
+                {...register('theme_overlay_url', {
+                  required: 'Image URL is required when overlay is enabled',
+                  pattern: {
+                    value: /^https?:\/\/.+/,
+                    message: 'Please enter a valid URL starting with http:// or https://'
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://example.com/your-transparent-gif.gif"
+              />
+              {errors.theme_overlay_url && (
+                <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_url.message}</p>
+              )}
+              <p className="mt-1 text-sm text-gray-500">
+                Enter the URL of a transparent background GIF image to use as a site-wide overlay.
+              </p>
+            </div>
           )}
-          <p className="mt-1 text-sm text-gray-500">
-            Enter the URL of a transparent background GIF image to use as a site-wide overlay.
-            The image will be repeated across all pages.
-          </p>
         </div>
 
-        {/* Overlay Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Opacity Control */}
-          <div>
-            <label htmlFor="theme_overlay_opacity" className="block text-sm font-medium text-gray-700 mb-2">
-              Opacity
-            </label>
-            <input
-              type="range"
-              id="theme_overlay_opacity"
-              min="0"
-              max="1"
-              step="0.1"
-              {...register('theme_overlay_opacity', {
-                required: 'Opacity is required',
-                min: { value: 0, message: 'Opacity must be at least 0' },
-                max: { value: 1, message: 'Opacity must be at most 1' }
-              })}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>0%</span>
-              <span className="font-medium">{Math.round(watch('theme_overlay_opacity') * 100)}%</span>
-              <span>100%</span>
-            </div>
-            {errors.theme_overlay_opacity && (
-              <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_opacity.message}</p>
-            )}
+        {/* Opacity Control */}
+        <div>
+          <label htmlFor="theme_overlay_opacity" className="block text-sm font-medium text-gray-700 mb-2">
+            Opacity
+          </label>
+          <input
+            type="range"
+            id="theme_overlay_opacity"
+            min="0"
+            max="1"
+            step="0.1"
+            {...register('theme_overlay_opacity', {
+              required: 'Opacity is required',
+              min: { value: 0, message: 'Opacity must be at least 0' },
+              max: { value: 1, message: 'Opacity must be at most 1' }
+            })}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0%</span>
+            <span className="font-medium">{Math.round(watch('theme_overlay_opacity') * 100)}%</span>
+            <span>100%</span>
           </div>
-
-          {/* Position Control */}
-          <div>
-            <label htmlFor="theme_overlay_position" className="block text-sm font-medium text-gray-700 mb-2">
-              Position
-            </label>
-            <select
-              id="theme_overlay_position"
-              {...register('theme_overlay_position', {
-                required: 'Position is required'
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="fixed">Fixed</option>
-              <option value="absolute">Absolute</option>
-            </select>
-            {errors.theme_overlay_position && (
-              <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_position.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Fixed: Stays in place when scrolling<br />
-              Absolute: Moves with page content
-            </p>
-          </div>
-
-          {/* Z-Index Control */}
-          <div>
-            <label htmlFor="theme_overlay_z_index" className="block text-sm font-medium text-gray-700 mb-2">
-              Z-Index
-            </label>
-            <input
-              type="number"
-              id="theme_overlay_z_index"
-              min="1"
-              max="99999"
-              {...register('theme_overlay_z_index', {
-                required: 'Z-index is required',
-                min: { value: 1, message: 'Z-index must be at least 1' },
-                max: { value: 99999, message: 'Z-index must be at most 99999' }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-            {errors.theme_overlay_z_index && (
-              <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_z_index.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Higher values appear on top of other elements
-            </p>
-          </div>
+          {errors.theme_overlay_opacity && (
+            <p className="mt-1 text-sm text-red-600">{errors.theme_overlay_opacity.message}</p>
+          )}
+          <p className="mt-1 text-sm text-gray-500">
+            Adjust the transparency of the overlay. Lower values make it more subtle.
+          </p>
         </div>
 
         {/* Image Preview */}
