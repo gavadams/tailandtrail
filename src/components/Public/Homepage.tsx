@@ -42,22 +42,20 @@ export const Homepage: React.FC = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600 flex flex-col items-center justify-center text-center">
               <div className="text-3xl font-bold text-yellow-200 mb-2">12hrs</div>
               <div className="text-yellow-300 text-sm">Game Duration</div>
             </div>
-            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600 flex flex-col items-center justify-center text-center">
               <div className="text-3xl font-bold text-yellow-200 mb-2">1-6</div>
               <div className="text-yellow-300 text-sm">Players</div>
             </div>
-            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600 flex flex-col items-center justify-center text-center">
               <div className="text-3xl font-bold text-yellow-200 mb-2">Many UK</div>
               <div className="text-yellow-300 text-sm">Locations</div>
             </div>
-            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
-              <div className="text-3xl font-bold text-yellow-200 mb-2 flex justify-center">
-                <span className="text-yellow-200">★★★★★</span>
-              </div>
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600 flex flex-col items-center justify-center text-center">
+              <div className="text-3xl font-bold text-yellow-200 mb-2">★★★★★</div>
               <div className="text-yellow-300 text-sm">Rated</div>
             </div>
           </div>
