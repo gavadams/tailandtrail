@@ -207,7 +207,7 @@ CREATE POLICY "Allow admin read access to code usage logs"
 DO $$
 BEGIN
   -- This will be handled by Supabase Auth, but we create a reference
-  -- The admin will sign up with email: gav.adams@gmail.com  --
+  -- The admin will sign up with email: contact@taleandtrail.games  --
   -- Password should be set through Supabase Auth
   NULL;
 END $$;

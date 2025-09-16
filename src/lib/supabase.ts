@@ -13,7 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Admin authentication helper
 export const signInAdmin = async (password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'gav.adams@gmail.com',
+    email: 'contact@taleandtrail.games',
     password: password
   });
   return { data, error };
