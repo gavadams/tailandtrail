@@ -62,10 +62,10 @@ export const ThemeOverlay: React.FC = () => {
           left: '16px',
           zIndex: 10000,
         }}
-        className="bg-black bg-opacity-60 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg"
+        className="bg-black bg-opacity-30 hover:bg-opacity-70 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg transition-all duration-200"
       >
         <div className="flex items-center space-x-2">
-          <span className="text-white text-xs font-medium">Theme</span>
+          <span className="text-white text-xs font-medium opacity-45 hover:opacity-100 transition-opacity duration-200">Theme</span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -73,7 +73,7 @@ export const ThemeOverlay: React.FC = () => {
               onChange={(e) => setUserEnabled(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-8 h-4 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+            <div className="w-8 h-4 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500 opacity-45 hover:opacity-100 transition-opacity duration-200"></div>
           </label>
         </div>
       </div>
