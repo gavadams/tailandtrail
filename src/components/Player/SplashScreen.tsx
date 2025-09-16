@@ -40,7 +40,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ splashScreen, onCont
                     Your browser does not support the video tag.
                   </video>
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-end">
-                    <div className="p-6">
+                    <div className="p-6 text-center">
                       <h1 className="text-3xl md:text-4xl font-bold text-yellow-100 mb-2">
                         {splashScreen.title}
                       </h1>
@@ -54,7 +54,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ splashScreen, onCont
                     alt={splashScreen.title}
                     className="w-full h-auto object-contain"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-6">
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-6 text-center">
                     <h1 className="text-3xl md:text-4xl font-bold text-yellow-100 mb-2">
                       {splashScreen.title}
                     </h1>

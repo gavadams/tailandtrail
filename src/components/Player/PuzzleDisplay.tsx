@@ -247,7 +247,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
     <div className="max-w-4xl mx-auto p-6">
       {/* Puzzle Header */}
       <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl p-6 mb-8 shadow-xl border border-yellow-600">
-        <h2 className="text-3xl font-bold text-yellow-200 mb-3">
+        <h2 className="text-3xl font-bold text-yellow-200 mb-3 text-center">
           {currentPuzzle.title}
         </h2>
         <div 
