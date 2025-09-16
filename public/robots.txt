@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://tailandtrail.com/sitemap.xml
+Sitemap: https://www.taleandtrail.games/sitemap.xml
 
 # Disallow admin areas
 Disallow: /admin/

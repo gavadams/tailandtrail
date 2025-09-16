@@ -41,7 +41,7 @@ export const ThemeOverlayManagement: React.FC = () => {
   const fetchThemeImages = async () => {
     try {
       setLoadingImages(true);
-      const response = await fetch('https://api.github.com/repos/gavadams/tailandtrail/contents/Images/Themes');
+      const response = await fetch('https://api.github.com/repos/gavadams/taleandtrail/contents/Images/Themes');
       
       if (!response.ok) {
         throw new Error('Failed to fetch theme images');

@@ -74,7 +74,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     'mystery games'
   ],
   canonicalUrl,
-  ogImage = 'https://tailandtrail.com/og-image.jpg',
+  ogImage = 'https://www.taleandtrail.games/og-image.jpg',
   ogType = 'website',
   city,
   structuredData
@@ -108,7 +108,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     "@type": "LocalBusiness",
     "name": "Tale and Trail",
     "description": cityDescription,
-    "url": canonicalUrl || "https://tailandtrail.com",
+    "url": canonicalUrl || "https://www.taleandtrail.games",
     "telephone": "+44-191-XXX-XXXX", // Update with actual phone
     "address": {
       "@type": "PostalAddress",
@@ -162,7 +162,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       <meta property="og:title" content={cityTitle} />
       <meta property="og:description" content={cityDescription} />
       <meta property="og:image" content={ogImage} />
-      <meta property="og:url" content={canonicalUrl || "https://tailandtrail.com"} />
+      <meta property="og:url" content={canonicalUrl || "https://www.taleandtrail.games"} />
       <meta property="og:site_name" content="Tale and Trail" />
       <meta property="og:locale" content="en_GB" />
       

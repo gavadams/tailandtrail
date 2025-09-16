@@ -13,7 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Admin authentication helper
 export const signInAdmin = async (password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'admin@pubpuzzlecrawl.com',
+    email: 'gav.adams@gmail.com',
     password: password
   });
   return { data, error };

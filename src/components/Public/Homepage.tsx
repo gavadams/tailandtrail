@@ -30,7 +30,7 @@ export const Homepage: React.FC = () => {
       <SEOHead 
         title="Tale and Trail - Interactive Pub Crawl Mystery Games"
         description="Experience immersive mystery pub crawl games in Newcastle upon Tyne. Solve puzzles, follow clues, and uncover secrets in real-world locations. Perfect for groups, teams, and adventure seekers."
-        canonicalUrl="https://tailandtrail.com"
+        canonicalUrl="https://www.taleandtrail.games"
         city={primaryCity}
       />
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">

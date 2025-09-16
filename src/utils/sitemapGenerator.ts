@@ -14,7 +14,7 @@ export interface SitemapUrl {
 }
 
 export const generateSitemap = async (): Promise<string> => {
-  const baseUrl = 'https://tailandtrail.com';
+  const baseUrl = 'https://www.taleandtrail.games';
   const currentDate = new Date().toISOString().split('T')[0];
 
   // Static pages

@@ -105,7 +105,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { 
       label: 'Generator', 
       icon: ExternalLink, 
-      url: 'https://tailandtrailgenerator.vercel.app/',
+      url: 'https://taleandtrailgenerator.vercel.app/',
       description: 'Remote Generator'
     }
   ];

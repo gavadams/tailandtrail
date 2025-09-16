@@ -17,7 +17,7 @@ export const SitemapPage: React.FC = () => {
         setSitemapXml(sitemap);
       } catch (error) {
         console.error('Error generating sitemap:', error);
-        setSitemapXml('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://tailandtrail.com/</loc><lastmod>' + new Date().toISOString().split('T')[0] + '</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>');
+        setSitemapXml('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.taleandtrail.games/</loc><lastmod>' + new Date().toISOString().split('T')[0] + '</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>');
       } finally {
         setIsLoading(false);
       }

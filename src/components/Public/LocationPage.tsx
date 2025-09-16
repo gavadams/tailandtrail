@@ -148,7 +148,7 @@ export const LocationPage: React.FC = () => {
         title={`Mystery Pub Crawl Games in ${city.name} | Tale and Trail`}
         description={`Experience immersive mystery pub crawl games in ${city.name}. Solve puzzles, follow clues, and uncover secrets in real-world locations. Perfect for groups, teams, and adventure seekers.`}
         keywords={cityKeywords}
-        canonicalUrl={`https://tailandtrail.com/locations/${citySlug}`}
+        canonicalUrl={`https://www.taleandtrail.games/locations/${citySlug}`}
         city={city}
       />
       

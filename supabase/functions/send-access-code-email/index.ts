@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("FROM_EMAIL") || "Tale and Trail <noreply@tailandtrail.games>";
+    const fromEmail = Deno.env.get("FROM_EMAIL") || "Tale and Trail <noreply@taleandtrail.games>";
     const adminEmail = Deno.env.get("ADMIN_EMAIL") || "";
     const siteUrl = Deno.env.get("SITE_URL") || "";
 

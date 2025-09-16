@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 // This would normally connect to your Supabase database
 // For now, we'll create a basic sitemap
 const generateStaticSitemap = () => {
-  const baseUrl = 'https://tailandtrail.com';
+  const baseUrl = 'https://www.taleandtrail.games';
   const currentDate = new Date().toISOString().split('T')[0];
 
   // Static pages
@@ -90,4 +90,4 @@ const sitemapXml = generateStaticSitemap();
 fs.writeFileSync(sitemapPath, sitemapXml);
 console.log('✅ Sitemap updated successfully!');
 console.log(`📁 Location: ${sitemapPath}`);
-console.log(`🌐 URL: https://tailandtrail.com/sitemap.xml`);
+console.log(`🌐 URL: https://www.taleandtrail.games/sitemap.xml`);
