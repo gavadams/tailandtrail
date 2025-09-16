@@ -168,6 +168,28 @@ export const LocationPage: React.FC = () => {
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
               Experience immersive puzzle adventures in {city.name}. Solve mysteries, follow clues, and uncover secrets in real-world locations. Perfect for groups, teams, and adventure seekers.
             </p>
+            
+            <div className="bg-gray-800 rounded-lg p-6 mb-8 max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold text-yellow-200 mb-4">Why Choose {city.name} for Your Adventure?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
+                <div>
+                  <h3 className="font-semibold text-yellow-300 mb-2">Historic Pubs & Landmarks</h3>
+                  <p>Explore {city.name}'s most iconic locations while solving puzzles and uncovering hidden secrets.</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-300 mb-2">Perfect for Groups</h3>
+                  <p>Whether you're planning a team building event, birthday party, or date night, our {city.name} adventures are ideal.</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-300 mb-2">Mobile-First Experience</h3>
+                  <p>All you need is your smartphone to access clues and track your progress through {city.name}.</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-yellow-300 mb-2">Flexible Timing</h3>
+                  <p>Start your {city.name} adventure whenever you're ready with our 12-hour flexible window.</p>
+                </div>
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
