@@ -45,12 +45,12 @@ export const ThemeOverlay: React.FC = () => {
             height: '100%',
             backgroundImage: `url(${overlayUrl})`,
             backgroundRepeat: 'repeat',
-            backgroundSize: 'auto',
             backgroundPosition: 'center',
             opacity: opacity,
             zIndex: 9999, // High z-index to ensure it's on top
             pointerEvents: 'none', // Allow clicks to pass through
           }}
+          className="bg-cover sm:bg-contain md:bg-cover lg:bg-contain xl:bg-cover bg-center bg-no-repeat"
         />
       )}
       

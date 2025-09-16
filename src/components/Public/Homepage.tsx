@@ -51,11 +51,13 @@ export const Homepage: React.FC = () => {
               <div className="text-yellow-300 text-sm">Players</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
-              <div className="text-3xl font-bold text-yellow-200 mb-2">5+</div>
-              <div className="text-yellow-300 text-sm">Puzzles</div>
+              <div className="text-3xl font-bold text-yellow-200 mb-2">Many</div>
+              <div className="text-yellow-300 text-sm">Locations</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
-              <div className="text-3xl font-bold text-yellow-200 mb-2">★★★★★</div>
+              <div className="text-3xl font-bold text-yellow-200 mb-2 flex justify-center">
+                <span className="text-yellow-200">★★★★★</span>
+              </div>
               <div className="text-yellow-300 text-sm">Rated</div>
             </div>
           </div>
