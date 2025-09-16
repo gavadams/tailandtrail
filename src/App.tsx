@@ -28,6 +28,7 @@ import { FAQPage } from './components/Public/FAQPage';
 import { ContactPage } from './components/Public/ContactPage';
 import { DynamicPage } from './components/Public/DynamicPage';
 import { LocationPage } from './components/Public/LocationPage';
+import { SitemapPage } from './components/Public/SitemapPage';
 
 // Component to handle scroll to top on route change
 const ScrollToTop: React.FC = () => {
@@ -160,6 +161,7 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/sitemap.xml" element={<SitemapPage />} />
           
           {/* Location pages for SEO */}
           <Route path="/locations/:citySlug" element={<LocationPage />} />
