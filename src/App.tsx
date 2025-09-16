@@ -14,6 +14,7 @@ import { useContentStore } from './stores/contentStore';
 // Components
 import { Navigation } from './components/Layout/Navigation';
 import { Footer } from './components/Layout/Footer';
+import { ThemeOverlay } from './components/Layout/ThemeOverlay';
 import { Homepage } from './components/Public/Homepage';
 import { PurchasePage } from './components/Public/PurchasePage';
 import { AccessCodeInput } from './components/Player/AccessCodeInput';
@@ -204,6 +205,7 @@ function App() {
       </div>
       
       <Footer />
+      <ThemeOverlay />
       <Analytics />
       <SpeedInsights />
     </Router>

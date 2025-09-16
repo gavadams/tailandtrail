@@ -11,6 +11,7 @@ import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
 import { ContentPage, SiteSettings } from '../../types';
 import { useContentStore } from '../../stores/contentStore';
+import { ThemeOverlayManagement } from './ThemeOverlayManagement';
 
 type ContentView = 'pages' | 'settings' | 'splash-screens';
 
@@ -641,6 +642,9 @@ export const ContentManagement: React.FC = () => {
               <span>New Setting</span>
             </button>
           </div>
+
+          {/* Theme Overlay Management */}
+          <ThemeOverlayManagement />
 
           {showSettingForm && renderSettingForm()}
 
