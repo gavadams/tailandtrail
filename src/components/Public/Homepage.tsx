@@ -3,15 +3,36 @@
  * Content is managed through the admin panel
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Trophy, ArrowRight } from 'lucide-react';
 import { useContentStore } from '../../stores/contentStore';
+import { SEOHead } from '../SEO/SEOHead';
+import { getActiveCities } from '../../utils/sitemapGenerator';
+import type { City } from '../../types';
 
 export const Homepage: React.FC = () => {
   const { getSetting } = useContentStore();
+  const [activeCities, setActiveCities] = useState<City[]>([]);
+
+  useEffect(() => {
+    // Load active cities for SEO
+    getActiveCities().then(setActiveCities);
+  }, []);
+
+  // Get primary city (Newcastle upon Tyne or first active city)
+  const primaryCity = activeCities.find(city => 
+    city.name.toLowerCase().includes('newcastle')
+  ) || activeCities[0];
 
   return (
+    <>
+      <SEOHead 
+        title="Tale and Trail - Interactive Pub Crawl Mystery Games"
+        description="Experience immersive mystery pub crawl games in Newcastle upon Tyne. Solve puzzles, follow clues, and uncover secrets in real-world locations. Perfect for groups, teams, and adventure seekers."
+        canonicalUrl="https://tailandtrail.com"
+        city={primaryCity}
+      />
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900">
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
@@ -108,6 +129,91 @@ export const Homepage: React.FC = () => {
         </div>
       </section>
 
+      {/* SEO Content Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Interactive Pub Crawl Games & Mystery Adventures
+            </h2>
+            <p className="text-xl text-gray-700 max-w-4xl mx-auto">
+              Experience the ultimate location-based puzzle adventure in Newcastle upon Tyne. 
+              Our immersive mystery pub crawl games combine real-world exploration with digital puzzle solving.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Perfect for Groups & Team Building
+              </h3>
+              <div className="space-y-4 text-gray-700">
+                <p>
+                  <strong>Team Building Activities:</strong> Our interactive mystery experiences are perfect for corporate team events, 
+                  helping teams work together to solve puzzles and uncover secrets.
+                </p>
+                <p>
+                  <strong>Group Entertainment:</strong> Whether you're planning a birthday party, bachelor/bachelorette party, 
+                  or just a fun day out with friends, our pub crawl games provide unique group entertainment.
+                </p>
+                <p>
+                  <strong>Date Night Activities:</strong> Looking for something different? Our mystery adventures offer 
+                  the perfect date night activity that combines exploration, problem-solving, and fun.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Real-World Puzzle Adventures
+              </h3>
+              <div className="space-y-4 text-gray-700">
+                <p>
+                  <strong>Location-Based Gaming:</strong> Turn Newcastle upon Tyne into your playground with our 
+                  GPS-enabled puzzle games that guide you through historic pubs and landmarks.
+                </p>
+                <p>
+                  <strong>Mobile Mystery Games:</strong> All you need is your smartphone to access clues, 
+                  solve puzzles, and track your progress through our progressive web app.
+                </p>
+                <p>
+                  <strong>Digital Scavenger Hunts:</strong> Our QR code puzzle games and smartphone treasure hunts 
+                  create an immersive experience that blends the digital and physical worlds.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16 bg-white rounded-lg p-8 shadow-lg">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Why Choose Tale and Trail for Your Adventure?
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Flexible Timing</h4>
+                <p className="text-gray-700">
+                  Start your adventure whenever you're ready. With a 12-hour window, you can take breaks, 
+                  enjoy meals, and explore at your own pace.
+                </p>
+              </div>
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">No Special Equipment</h4>
+                <p className="text-gray-700">
+                  All you need is your smartphone and an internet connection. Our browser-based adventure games 
+                  work on any device with a web browser.
+                </p>
+              </div>
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Local Experiences</h4>
+                <p className="text-gray-700">
+                  Discover hidden gems and historic locations in Newcastle upon Tyne while solving mysteries 
+                  and completing interactive challenges.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-green-600 to-green-700">
@@ -128,5 +234,6 @@ export const Homepage: React.FC = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };

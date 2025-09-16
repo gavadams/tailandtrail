@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { supabase } from './lib/supabase';
@@ -26,6 +27,7 @@ import { HowItWorksPage } from './components/Public/HowItWorksPage';
 import { FAQPage } from './components/Public/FAQPage';
 import { ContactPage } from './components/Public/ContactPage';
 import { DynamicPage } from './components/Public/DynamicPage';
+import { LocationPage } from './components/Public/LocationPage';
 
 // Component to handle scroll to top on route change
 const ScrollToTop: React.FC = () => {
@@ -41,7 +43,7 @@ const ScrollToTop: React.FC = () => {
 function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const { currentSession, error, setError, clearSession } = useGameStore();
+  const { currentSession, error, setError } = useGameStore();
   const { initialize } = useContentStore();
 
   useEffect(() => {
@@ -159,6 +161,9 @@ function App() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/contact" element={<ContactPage />} />
           
+          {/* Location pages for SEO */}
+          <Route path="/locations/:citySlug" element={<LocationPage />} />
+          
           {/* Dynamic pages from CMS */}
           <Route path="/privacy" element={<DynamicPage slug="privacy" />} />
           <Route path="/terms" element={<DynamicPage slug="terms" />} />
@@ -212,4 +217,12 @@ function App() {
   );
 }
 
-export default App;
+function AppWithHelmet() {
+  return (
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
+  );
+}
+
+export default AppWithHelmet;

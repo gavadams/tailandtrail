@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://tailandtrail.com/sitemap.xml
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /test-game/
+
+# Allow all other content
+Allow: /
+Allow: /games/
+Allow: /locations/
