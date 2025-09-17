@@ -10,7 +10,9 @@ import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
 import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
-import type { Game, Puzzle, SplashScreen } from '../../types';
+import { logActivity, logCreate, logUpdate, logDelete } from '../../utils/activityLogger';
+import { getUserPrivileges } from '../../utils/permissions';
+import type { Game, Puzzle, SplashScreen, AdminUser } from '../../types';
 
 
 interface PuzzleForm {
@@ -34,6 +36,7 @@ export const PuzzleManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   
   // Splash screen states
   const [splashScreens, setSplashScreens] = useState<SplashScreen[]>([]);
@@ -122,8 +125,34 @@ export const PuzzleManagement: React.FC = () => {
   const watchAnswerType = watch("answer_type");
 
   useEffect(() => {
+    loadCurrentUser();
     loadGames();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedGameId) {
@@ -217,19 +246,51 @@ export const PuzzleManagement: React.FC = () => {
           .eq('id', editingPuzzle.id);
 
         if (updateError) throw updateError;
+        
+        // Log the update activity
+        await logUpdate('puzzle', editingPuzzle.id, {
+          title: data.title,
+          description: puzzleData.description,
+          riddle: puzzleData.riddle,
+          clues: clues,
+          answer: data.answer,
+          answer_type: data.answer_type,
+          answer_options: answerOptions,
+          image_url: data.image_url,
+          video_url: data.video_url,
+          game_id: editingPuzzle.game_id,
+          previous_title: editingPuzzle.title
+        });
       } else {
         // Create new puzzle - get next sequence order
         const maxOrder = puzzles.length > 0 ? Math.max(...puzzles.map(p => p.sequence_order)) : 0;
         
-        const { error: insertError } = await supabase
+        const { data: newPuzzle, error: insertError } = await supabase
           .from('puzzles')
           .insert({
             ...puzzleData,
             game_id: data.game_id,
             sequence_order: maxOrder + 1
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) throw insertError;
+        
+        // Log the creation activity
+        await logCreate('puzzle', newPuzzle.id, {
+          title: data.title,
+          description: puzzleData.description,
+          riddle: puzzleData.riddle,
+          clues: clues,
+          answer: data.answer,
+          answer_type: data.answer_type,
+          answer_options: answerOptions,
+          image_url: data.image_url,
+          video_url: data.video_url,
+          game_id: data.game_id,
+          sequence_order: maxOrder + 1
+        });
       }
 
       // Reset form and reload puzzles
@@ -278,12 +339,25 @@ export const PuzzleManagement: React.FC = () => {
     }
 
     try {
+      // Get puzzle info before deleting for logging
+      const puzzleToDelete = puzzles.find(p => p.id === puzzleId);
+      
       const { error: deleteError } = await supabase
         .from('puzzles')
         .delete()
         .eq('id', puzzleId);
 
       if (deleteError) throw deleteError;
+      
+      // Log the deletion activity
+      if (puzzleToDelete) {
+        await logDelete('puzzle', puzzleId, {
+          title: puzzleToDelete.title,
+          game_id: puzzleToDelete.game_id,
+          sequence_order: puzzleToDelete.sequence_order
+        });
+      }
+      
       if (selectedGameId) {
         loadPuzzlesForGame(selectedGameId);
       }
@@ -313,6 +387,21 @@ export const PuzzleManagement: React.FC = () => {
         .from('puzzles')
         .update({ sequence_order: currentOrder })
         .eq('id', targetPuzzle.id);
+
+      // Log the sequence reorder activity
+      await logActivity({
+        action: 'reorder_puzzle',
+        resource_type: 'puzzle',
+        resource_id: puzzleId,
+        details: {
+          puzzle_title: currentPuzzle.title,
+          direction: direction,
+          from_order: currentOrder,
+          to_order: targetOrder,
+          swapped_with: targetPuzzle.title,
+          game_id: currentPuzzle.game_id
+        }
+      });
 
       loadPuzzlesForGame(selectedGameId);
     } catch (err) {
@@ -480,14 +569,16 @@ export const PuzzleManagement: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Puzzle Management</h2>
           <p className="text-gray-600 mt-1">Create and manage puzzles for your games</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          disabled={!selectedGameId}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Puzzle</span>
-        </button>
+        {currentUser && getUserPrivileges(currentUser.role).can_manage_puzzles && (
+          <button
+            onClick={() => setShowForm(true)}
+            disabled={!selectedGameId}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Puzzle</span>
+          </button>
+        )}
       </div>
 
       {/* Game Selection */}
@@ -593,8 +684,8 @@ export const PuzzleManagement: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Riddle/Challenge
-                </label>
+                Riddle/Challenge
+              </label>
                 <button
                   type="button"
                   onClick={() => setIsHtmlMode(!isHtmlMode)}
@@ -721,29 +812,29 @@ export const PuzzleManagement: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <ReactQuill
-                  value={puzzleRiddle}
-                  onChange={setPuzzleRiddle}
-                  theme="snow"
-                  className="bg-white"
-                  placeholder="Enter the main puzzle or riddle..."
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link', 'blockquote', 'code-block'],
-                      [{ 'color': [] }, { 'background': [] }],
-                      [{ 'align': [] }],
-                      ['clean']
-                    ]
-                  }}
+              <ReactQuill
+                value={puzzleRiddle}
+                onChange={setPuzzleRiddle}
+                theme="snow"
+                className="bg-white"
+                placeholder="Enter the main puzzle or riddle..."
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'blockquote', 'code-block'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'align': [] }],
+                    ['clean']
+                  ]
+                }}
                   formats={[
                     'header', 'bold', 'italic', 'underline', 'strike',
                     'list', 'bullet', 'link', 'blockquote', 'code-block',
                     'color', 'background', 'align'
                   ]}
-                />
+              />
               )}
               
               {!puzzleRiddle.trim() && (
@@ -988,42 +1079,46 @@ export const PuzzleManagement: React.FC = () => {
                     
                     <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
                       {/* Sequence controls */}
-                      <div className="flex flex-col space-y-1">
-                        <button
-                          onClick={() => handleMoveSequence(puzzle.id, 'up')}
-                          disabled={index === 0}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                          title="Move Up"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveSequence(puzzle.id, 'down')}
-                          disabled={index === puzzles.length - 1}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                          title="Move Down"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {currentUser && getUserPrivileges(currentUser.role).can_manage_puzzles && (
+                        <div className="flex flex-col space-y-1">
+                          <button
+                            onClick={() => handleMoveSequence(puzzle.id, 'up')}
+                            disabled={index === 0}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveSequence(puzzle.id, 'down')}
+                            disabled={index === puzzles.length - 1}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                       
                       {/* Edit/Delete controls */}
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => handleEditPuzzle(puzzle)}
-                          className="text-blue-600 hover:text-blue-700 p-1"
-                          title="Edit Puzzle"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePuzzle(puzzle.id)}
-                          className="text-red-600 hover:text-red-700 p-1"
-                          title="Delete Puzzle"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      {currentUser && getUserPrivileges(currentUser.role).can_manage_puzzles && (
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEditPuzzle(puzzle)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Edit Puzzle"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePuzzle(puzzle.id)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="Delete Puzzle"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
+                      )}
                       </div>
                     </div>
                   </div>

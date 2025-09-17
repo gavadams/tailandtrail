@@ -5,9 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Key, Copy, Eye, Trash2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Key, Copy, Trash2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Game, AccessCode, CodeUsageLog } from '../../types';
+import { getUserPrivileges } from '../../utils/permissions';
+import { Game, AccessCode, AdminUser } from '../../types';
 
 interface CodeGenerationForm {
   game_id: string;
@@ -17,18 +18,44 @@ interface CodeGenerationForm {
 export const AccessCodeManagement: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [accessCodes, setAccessCodes] = useState<AccessCode[]>([]);
-  const [usageLogs, setUsageLogs] = useState<CodeUsageLog[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CodeGenerationForm>();
 
   useEffect(() => {
+    loadCurrentUser();
     loadGames();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedGameId) {
@@ -69,15 +96,14 @@ export const AccessCodeManagement: React.FC = () => {
       // Load usage logs for these codes
       if (data && data.length > 0) {
         const codeIds = data.map(code => code.id);
-        const { data: logs } = await supabase
+        // Load usage logs (not currently displayed)
+        await supabase
           .from('code_usage_logs')
           .select('*')
           .in('access_code_id', codeIds)
           .order('timestamp', { ascending: false });
-        
-        setUsageLogs(logs || []);
       } else {
-        setUsageLogs([]);
+        // No usage logs to load
       }
     } catch (err) {
       setError('Failed to load access codes');
@@ -261,14 +287,16 @@ export const AccessCodeManagement: React.FC = () => {
             
             <input type="hidden" {...register('game_id')} value={selectedGameId} />
             
-            <button
-              type="submit"
-              disabled={isGenerating}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              {isGenerating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
-              <span>{isGenerating ? 'Generating...' : 'Generate Codes'}</span>
-            </button>
+            {currentUser && getUserPrivileges(currentUser.role).can_manage_access_codes && (
+              <button
+                type="submit"
+                disabled={isGenerating}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                {isGenerating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                <span>{isGenerating ? 'Generating...' : 'Generate Codes'}</span>
+              </button>
+            )}
           </form>
         </div>
       )}
@@ -350,16 +378,18 @@ export const AccessCodeManagement: React.FC = () => {
                         {code.expires_at ? new Date(code.expires_at).toLocaleString() : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleDeactivateCode(code.id)}
-                            disabled={!code.is_active}
-                            className="text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed p-1"
-                            title="Deactivate Code"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        {currentUser && getUserPrivileges(currentUser.role).can_manage_access_codes && (
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleDeactivateCode(code.id)}
+                              disabled={!code.is_active}
+                              className="text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed p-1"
+                              title="Deactivate Code"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -401,16 +431,18 @@ export const AccessCodeManagement: React.FC = () => {
                         {status}
                       </span>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleDeactivateCode(code.id)}
-                        disabled={!code.is_active}
-                        className="text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed p-2"
-                        title="Deactivate Code"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
+                    {currentUser && getUserPrivileges(currentUser.role).can_manage_access_codes && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleDeactivateCode(code.id)}
+                          disabled={!code.is_active}
+                          className="text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed p-2"
+                          title="Deactivate Code"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>

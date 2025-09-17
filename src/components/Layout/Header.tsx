@@ -4,17 +4,19 @@
  */
 
 import React from 'react';
-import { Beer, Crown, LogOut } from 'lucide-react';
+import { Beer, Crown, LogOut, User } from 'lucide-react';
 import { useGameStore } from '../../stores/gameStore';
 import { useContentStore } from '../../stores/contentStore';
+import type { AdminUser } from '../../types';
 
 interface HeaderProps {
   showAdminControls?: boolean;
   onLogout?: () => void;
   hideBranding?: boolean; // Hide beer icon and site name for player game mode
+  adminUser?: AdminUser | null; // Admin user information for display
 }
 
-export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout, hideBranding = false }) => {
+export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout, hideBranding = false, adminUser }) => {
   const { currentGame, currentSession } = useGameStore();
   const { getSetting } = useContentStore();
 
@@ -49,6 +51,18 @@ export const Header: React.FC<HeaderProps> = ({ showAdminControls, onLogout, hid
               <div className="flex items-center space-x-2 bg-gray-800 px-3 py-2 rounded-lg">
                 <Crown className="h-5 w-5 text-yellow-300" />
                 <span className="text-yellow-200 font-medium">Admin</span>
+              </div>
+            )}
+            
+            {adminUser && (
+              <div className="text-yellow-200 text-sm space-y-1">
+                <div className="flex items-center space-x-1">
+                  <User className="h-4 w-4" />
+                  <span>Admin: {adminUser.role}</span>
+                </div>
+                <div className="text-yellow-300 text-xs">
+                  {adminUser.email}
+                </div>
               </div>
             )}
             

@@ -6,7 +6,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Shield, AlertCircle, Crown } from 'lucide-react';
-import { signInAdmin } from '../../lib/supabase';
+import { signInAdmin, supabase } from '../../lib/supabase';
+import { logActivity } from '../../utils/activityLogger';
 
 interface AdminLoginForm {
   email: string;
@@ -32,6 +33,51 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       if (authError) {
         setError('Invalid email or password. Please try again.');
       } else {
+        // Get user data and check if password needs to be changed
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Fetch admin user data to check password_changed status
+          const { data: adminUser, error: adminError } = await supabase
+            .from('admin_users')
+            .select('id, email, role, is_active, activity_tracking_enabled, password_changed, last_login, created_at, updated_at, created_by')
+            .eq('id', user.id)
+            .single();
+
+          if (adminError) {
+            setError('Failed to load user data. Please try again.');
+            return;
+          }
+
+          // Update last login time
+          await supabase
+            .from('admin_users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', user.id);
+          
+          // Log the login activity
+          await logActivity({
+            action: 'login',
+            resource_type: 'user',
+            resource_id: user.id,
+            details: {
+              email: data.email,
+              login_time: new Date().toISOString()
+            }
+          });
+
+          // Check if password needs to be changed
+          const needsPasswordChange = adminUser.password_changed === false;
+          
+          if (needsPasswordChange) {
+            // Store user data in sessionStorage for the password change page
+            sessionStorage.setItem('passwordChangeUser', JSON.stringify(adminUser));
+            
+            // Redirect to a dedicated password change page
+            window.location.href = '/admin/password-change';
+            return;
+          }
+        }
+        
         onLogin();
       }
     } catch (err) {
@@ -124,6 +170,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
             <Shield className="h-5 w-5 mr-2" />
             {isLoggingIn ? 'Authenticating...' : 'Access Dashboard'}
           </button>
+
         </form>
 
         {/* Security Notice */}
@@ -134,6 +181,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           </p>
         </div>
       </div>
+
     </div>
   );
 };

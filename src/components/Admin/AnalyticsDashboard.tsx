@@ -29,7 +29,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import type { Game, Puzzle } from '../../types';
+import { getUserPrivileges } from '../../utils/permissions';
+import type { Game, Puzzle, AdminUser } from '../../types';
 
 // Register Chart.js components
 ChartJS.register(
@@ -77,10 +78,37 @@ export const AnalyticsDashboard: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   useEffect(() => {
+    loadCurrentUser();
     loadGames();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedGameId) {
@@ -222,6 +250,15 @@ export const AnalyticsDashboard: React.FC = () => {
       },
     },
   };
+
+  // Check permissions
+  if (currentUser && !getUserPrivileges(currentUser.role).can_view_analytics) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <p className="text-red-700">You don't have permission to view analytics.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

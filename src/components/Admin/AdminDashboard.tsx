@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin, ExternalLink, Menu, X } from 'lucide-react';
+import { Users, GamepadIcon, Puzzle, Key, BarChart3, TrendingUp, MapPin, ExternalLink, Menu, X, Shield, User } from 'lucide-react';
 import { Header } from '../Layout/Header';
 import { GameManagement } from './GameManagement';
 import { PuzzleManagement } from './PuzzleManagement';
@@ -14,9 +14,13 @@ import { SplashScreenManagement } from './SplashScreenManagement';
 import { PurchaseManagement } from './PurchaseManagement';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { LocationManagement } from './LocationManagement';
+import UserManagement from './UserManagement';
+import UserProfile from './UserProfile';
 import { supabase, signOut } from '../../lib/supabase';
+import { getUserPrivileges } from '../../utils/permissions';
+import type { AdminUser } from '../../types';
 
-type AdminView = 'overview' | 'games' | 'puzzles' | 'codes' | 'content' | 'splash' | 'purchases' | 'analytics' | 'locations';
+type AdminView = 'overview' | 'games' | 'puzzles' | 'codes' | 'content' | 'splash' | 'purchases' | 'analytics' | 'locations' | 'users' | 'profile';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -33,6 +37,7 @@ interface DashboardStats {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [currentView, setCurrentView] = useState<AdminView>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalGames: 0,
     totalPuzzles: 0,
@@ -42,8 +47,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   });
 
   useEffect(() => {
+    loadCurrentUser();
     loadDashboardStats();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('id, email, role, is_active, activity_tracking_enabled, password_changed, last_login, created_at, updated_at, created_by')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   const loadDashboardStats = async () => {
     try {
@@ -89,17 +120,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     onLogout();
   };
 
-  const navigationItems = [
-    { id: 'overview' as AdminView, label: 'Overview', icon: BarChart3 },
-    { id: 'games' as AdminView, label: 'Games', icon: GamepadIcon },
-    { id: 'puzzles' as AdminView, label: 'Puzzles', icon: Puzzle },
-    { id: 'splash' as AdminView, label: 'Splash Screens', icon: Users },
-    { id: 'locations' as AdminView, label: 'Locations', icon: MapPin },
-    { id: 'codes' as AdminView, label: 'Access Codes', icon: Key },
-    { id: 'purchases' as AdminView, label: 'Purchases', icon: Users },
-    { id: 'analytics' as AdminView, label: 'Analytics', icon: TrendingUp },
-    { id: 'content' as AdminView, label: 'Content', icon: Users }
-  ];
+  const getNavigationItems = () => {
+    if (!currentUser) return [];
+    
+    const privileges = getUserPrivileges(currentUser.role);
+    const allItems = [
+      { id: 'overview' as AdminView, label: 'Overview', icon: BarChart3, permission: null },
+      { id: 'games' as AdminView, label: 'Games', icon: GamepadIcon, permission: 'can_manage_games' },
+      { id: 'puzzles' as AdminView, label: 'Puzzles', icon: Puzzle, permission: 'can_manage_puzzles' },
+      { id: 'splash' as AdminView, label: 'Splash Screens', icon: Users, permission: 'can_manage_splash_screens' },
+      { id: 'locations' as AdminView, label: 'Locations', icon: MapPin, permission: 'can_manage_content' },
+      { id: 'codes' as AdminView, label: 'Access Codes', icon: Key, permission: 'can_manage_access_codes' },
+      { id: 'purchases' as AdminView, label: 'Purchases', icon: Users, permission: null },
+      { id: 'analytics' as AdminView, label: 'Analytics', icon: TrendingUp, permission: 'can_view_analytics' },
+      { id: 'content' as AdminView, label: 'Content', icon: Users, permission: 'can_manage_content' },
+      { id: 'users' as AdminView, label: 'User Management', icon: Shield, permission: 'can_manage_users' },
+      { id: 'profile' as AdminView, label: 'My Profile', icon: User, permission: null }
+    ];
+
+    return allItems.filter(item => 
+      item.permission === null || privileges[item.permission as keyof typeof privileges]
+    );
+  };
 
   const externalLinks = [
     { 
@@ -128,6 +170,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         return <AnalyticsDashboard />;
       case 'locations':
         return <LocationManagement />;
+      case 'users':
+        return <UserManagement />;
+      case 'profile':
+        return <UserProfile />;
       case 'overview':
       default:
         return (
@@ -237,7 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showAdminControls onLogout={handleLogout} hideBranding={true} />
+      <Header showAdminControls onLogout={handleLogout} hideBranding={true} adminUser={currentUser} />
       
       <div className="flex flex-col lg:flex-row">
         {/* Mobile Menu Button */}
@@ -254,7 +300,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         } fixed lg:relative z-40 lg:z-auto`}>
           <nav className="p-4 pt-16 lg:pt-4">
             <div className="space-y-2">
-              {navigationItems.map((item) => {
+              {getNavigationItems().map((item) => {
                 const Icon = item.icon;
                 return (
                   <button

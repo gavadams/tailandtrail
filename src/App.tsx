@@ -23,6 +23,7 @@ import { PlayerGame } from './components/Player/PlayerGame';
 import { AdminLogin } from './components/Admin/AdminLogin';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { TestGame } from './components/Admin/TestGame';
+import PasswordChange from './pages/PasswordChange';
 import { HowItWorksPage } from './components/Public/HowItWorksPage';
 import { FAQPage } from './components/Public/FAQPage';
 import { ContactPage } from './components/Public/ContactPage';
@@ -193,6 +194,9 @@ function App() {
               )
             }
           />
+
+          {/* Password Change Route */}
+          <Route path="/admin/password-change" element={<PasswordChange />} />
 
           {/* Test Game Route - Admin Only */}
           <Route

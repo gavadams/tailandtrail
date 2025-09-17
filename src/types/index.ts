@@ -125,3 +125,40 @@ export interface SiteSettings {
   description?: string;
   updated_at: string;
 }
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: 'super_admin' | 'admin' | 'editor' | 'viewer';
+  is_active: boolean;
+  activity_tracking_enabled: boolean;
+  password_changed: boolean;
+  last_login: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  action: string;
+  resource_type: 'puzzle' | 'game' | 'content' | 'splash_screen' | 'user' | 'settings' | 'access_code';
+  resource_id: string | null;
+  details: any;
+  ip_address: string | null;
+  user_agent: string | null;
+  timestamp: string;
+}
+
+export interface UserPrivileges {
+  can_manage_users: boolean;
+  can_manage_games: boolean;
+  can_manage_puzzles: boolean;
+  can_manage_content: boolean;
+  can_manage_splash_screens: boolean;
+  can_manage_access_codes: boolean;
+  can_view_analytics: boolean;
+  can_manage_settings: boolean;
+  can_view_activity_logs: boolean;
+}

@@ -7,7 +7,9 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit3, Trash2, GamepadIcon, AlertCircle, MapPin, Copy, Play, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Game, City } from '../../types';
+import { logActivity, logCreate, logUpdate, logDelete } from '../../utils/activityLogger';
+import { getUserPrivileges } from '../../utils/permissions';
+import { Game, City, AdminUser } from '../../types';
 
 interface GameForm {
   title: string;
@@ -29,6 +31,7 @@ export const GameManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<GameForm>({
     defaultValues: {
@@ -39,9 +42,35 @@ export const GameManagement: React.FC = () => {
   });
 
   useEffect(() => {
+    loadCurrentUser();
     loadGames();
     loadCities();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   const loadGames = async () => {
     setIsLoading(true);
@@ -97,9 +126,22 @@ export const GameManagement: React.FC = () => {
           .eq('id', editingGame.id);
 
         if (updateError) throw updateError;
+        
+        // Log the update activity
+        await logUpdate('game', editingGame.id, {
+          title: data.title,
+          description: data.description,
+          theme: data.theme,
+          city_id: data.city_id,
+          is_active: data.is_active,
+          game_tested: data.game_tested,
+          content_tested: data.content_tested,
+          previous_title: editingGame.title,
+          previous_theme: editingGame.theme
+        });
       } else {
         // Create new game
-        const { error: insertError } = await supabase
+        const { data: newGame, error: insertError } = await supabase
           .from('games')
           .insert({
             title: data.title,
@@ -109,9 +151,22 @@ export const GameManagement: React.FC = () => {
             is_active: data.is_active,
             game_tested: data.game_tested,
             content_tested: data.content_tested
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) throw insertError;
+        
+        // Log the creation activity
+        await logCreate('game', newGame.id, {
+          title: data.title,
+          description: data.description,
+          theme: data.theme,
+          city_id: data.city_id,
+          is_active: data.is_active,
+          game_tested: data.game_tested,
+          content_tested: data.content_tested
+        });
       }
 
       // Reset form and reload games
@@ -142,12 +197,25 @@ export const GameManagement: React.FC = () => {
     }
 
     try {
+      // Get game info before deleting for logging
+      const gameToDelete = games.find(g => g.id === gameId);
+      
       const { error: deleteError } = await supabase
         .from('games')
         .delete()
         .eq('id', gameId);
 
       if (deleteError) throw deleteError;
+      
+      // Log the deletion activity
+      if (gameToDelete) {
+        await logDelete('game', gameId, {
+          title: gameToDelete.title,
+          theme: gameToDelete.theme,
+          city_id: gameToDelete.city_id
+        });
+      }
+      
       loadGames();
     } catch (err) {
       setError('Failed to delete game');
@@ -185,6 +253,16 @@ export const GameManagement: React.FC = () => {
 
       if (gameError) throw gameError;
 
+      // Log the game duplication
+      await logCreate('game', newGame.id, {
+        title: data.new_title,
+        description: duplicatingGame.description,
+        theme: duplicatingGame.theme,
+        city_id: data.new_city_id,
+        duplicated_from: duplicatingGame.id,
+        original_title: duplicatingGame.title
+      });
+
       // Then, get all puzzles from the original game
       const { data: originalPuzzles, error: puzzlesError } = await supabase
         .from('puzzles')
@@ -215,6 +293,18 @@ export const GameManagement: React.FC = () => {
           .insert(newPuzzles);
 
         if (insertPuzzlesError) throw insertPuzzlesError;
+        
+        // Log puzzle duplication
+        await logActivity({
+          action: 'duplicate_puzzles',
+          resource_type: 'puzzle',
+          resource_id: newGame.id,
+          details: {
+            count: originalPuzzles.length,
+            duplicated_from_game: duplicatingGame.id,
+            new_game_id: newGame.id
+          }
+        });
       }
 
       // Duplicate splash screens for the new game
@@ -242,6 +332,18 @@ export const GameManagement: React.FC = () => {
           .insert(newSplashScreens);
 
         if (insertSplashError) throw insertSplashError;
+        
+        // Log splash screen duplication
+        await logActivity({
+          action: 'duplicate_splash_screens',
+          resource_type: 'splash_screen',
+          resource_id: newGame.id,
+          details: {
+            count: originalSplashScreens.length,
+            duplicated_from_game: duplicatingGame.id,
+            new_game_id: newGame.id
+          }
+        });
       }
 
       // Reset and reload
@@ -281,13 +383,15 @@ export const GameManagement: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Game Management</h2>
           <p className="text-gray-600 mt-1">Create and manage your puzzle games</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors font-medium"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Game</span>
-        </button>
+        {currentUser && getUserPrivileges(currentUser.role).can_manage_games && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors font-medium"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Game</span>
+          </button>
+        )}
       </div>
 
       {/* Error Display */}
@@ -463,27 +567,33 @@ export const GameManagement: React.FC = () => {
                   >
                     <Play className="h-4 w-4 sm:h-4 sm:w-4" />
                   </button>
-                  <button
-                    onClick={() => handleEditGame(game)}
-                    className="text-blue-600 hover:text-blue-700 p-2 sm:p-1 rounded-md hover:bg-blue-50 transition-colors"
-                    title="Edit Game"
-                  >
-                    <Edit3 className="h-4 w-4 sm:h-4 sm:w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDuplicateGame(game)}
-                    className="text-green-600 hover:text-green-700 p-2 sm:p-1 rounded-md hover:bg-green-50 transition-colors"
-                    title="Duplicate Game"
-                  >
-                    <Copy className="h-4 w-4 sm:h-4 sm:w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteGame(game.id)}
-                    className="text-red-600 hover:text-red-700 p-2 sm:p-1 rounded-md hover:bg-red-50 transition-colors"
-                    title="Delete Game"
-                  >
-                    <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
-                  </button>
+                  {currentUser && getUserPrivileges(currentUser.role).can_manage_games && (
+                    <button
+                      onClick={() => handleEditGame(game)}
+                      className="text-blue-600 hover:text-blue-700 p-2 sm:p-1 rounded-md hover:bg-blue-50 transition-colors"
+                      title="Edit Game"
+                    >
+                      <Edit3 className="h-4 w-4 sm:h-4 sm:w-4" />
+                    </button>
+                  )}
+                  {currentUser && getUserPrivileges(currentUser.role).can_manage_games && (
+                    <button
+                      onClick={() => handleDuplicateGame(game)}
+                      className="text-green-600 hover:text-green-700 p-2 sm:p-1 rounded-md hover:bg-green-50 transition-colors"
+                      title="Duplicate Game"
+                    >
+                      <Copy className="h-4 w-4 sm:h-4 sm:w-4" />
+                    </button>
+                  )}
+                  {currentUser && getUserPrivileges(currentUser.role).can_manage_games && (
+                    <button
+                      onClick={() => handleDeleteGame(game.id)}
+                      className="text-red-600 hover:text-red-700 p-2 sm:p-1 rounded-md hover:bg-red-50 transition-colors"
+                      title="Delete Game"
+                    >
+                      <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
               

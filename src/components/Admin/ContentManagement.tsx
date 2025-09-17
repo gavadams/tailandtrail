@@ -5,12 +5,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit3, Trash2, Save, Eye, Settings, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Save, Settings, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
 import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
-import { ContentPage, SiteSettings } from '../../types';
+import { getUserPrivileges } from '../../utils/permissions';
+import { ContentPage, SiteSettings, AdminUser } from '../../types';
 import { useContentStore } from '../../stores/contentStore';
 import { ThemeOverlayManagement } from './ThemeOverlayManagement';
 
@@ -46,8 +47,9 @@ export const ContentManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
-  const { register: registerPage, handleSubmit: handleSubmitPage, reset: resetPage, setValue: setPageValue, watch: watchPage, formState: { errors: pageErrors } } = useForm<PageForm>();
+  const { register: registerPage, handleSubmit: handleSubmitPage, reset: resetPage, setValue: setPageValue, formState: { errors: pageErrors } } = useForm<PageForm>();
   const { register: registerSetting, handleSubmit: handleSubmitSetting, reset: resetSetting, setValue: setSettingValue, formState: { errors: settingErrors } } = useForm<SettingForm>();
 
   const [pageContent, setPageContent] = useState('');
@@ -55,6 +57,7 @@ export const ContentManagement: React.FC = () => {
   const { setPages: updateStorePages, setSettings: updateStoreSettings } = useContentStore();
 
   useEffect(() => {
+    loadCurrentUser();
     loadContent();
     // Clear messages after 5 seconds
     if (success || error) {
@@ -65,6 +68,31 @@ export const ContentManagement: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   const loadContent = async () => {
     setIsLoading(true);
@@ -557,13 +585,15 @@ export const ContentManagement: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold text-gray-900">Pages</h3>
-            <button
-              onClick={() => setShowPageForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Page</span>
-            </button>
+            {currentUser && getUserPrivileges(currentUser.role).can_manage_content && (
+              <button
+                onClick={() => setShowPageForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Page</span>
+              </button>
+            )}
           </div>
 
           {showPageForm && renderPageForm()}
@@ -620,22 +650,24 @@ export const ContentManagement: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleEditPage(page)}
-                              className="text-blue-600 hover:text-blue-700 p-1"
-                              title="Edit Page"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeletePage(page.id)}
-                              className="text-red-600 hover:text-red-700 p-1"
-                              title="Delete Page"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {currentUser && getUserPrivileges(currentUser.role).can_manage_content && (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleEditPage(page)}
+                                className="text-blue-600 hover:text-blue-700 p-1"
+                                title="Edit Page"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePage(page.id)}
+                                className="text-red-600 hover:text-red-700 p-1"
+                                title="Delete Page"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -652,22 +684,24 @@ export const ContentManagement: React.FC = () => {
                         <h3 className="font-medium text-gray-900 text-lg">{page.title}</h3>
                         <code className="text-sm text-gray-600">/{page.slug}</code>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditPage(page)}
-                          className="text-blue-600 hover:text-blue-700 p-2"
-                          title="Edit Page"
-                        >
-                          <Edit3 className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePage(page.id)}
-                          className="text-red-600 hover:text-red-700 p-2"
-                          title="Delete Page"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
+                      {currentUser && getUserPrivileges(currentUser.role).can_manage_content && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditPage(page)}
+                            className="text-blue-600 hover:text-blue-700 p-2"
+                            title="Edit Page"
+                          >
+                            <Edit3 className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePage(page.id)}
+                            className="text-red-600 hover:text-red-700 p-2"
+                            title="Delete Page"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
@@ -694,13 +728,15 @@ export const ContentManagement: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold text-gray-900">Site Settings</h3>
-            <button
-              onClick={() => setShowSettingForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Setting</span>
-            </button>
+            {currentUser && getUserPrivileges(currentUser.role).can_manage_settings && (
+              <button
+                onClick={() => setShowSettingForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Setting</span>
+              </button>
+            )}
           </div>
 
           {/* Theme Overlay Management */}
@@ -737,20 +773,22 @@ export const ContentManagement: React.FC = () => {
                             <p className="text-sm text-gray-500">{setting.description}</p>
                           )}
                         </div>
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => handleEditSetting(setting)}
-                            className="text-blue-600 hover:text-blue-700 p-1"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSetting(setting.id)}
-                            className="text-red-600 hover:text-red-700 p-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
+                        {currentUser && getUserPrivileges(currentUser.role).can_manage_settings && (
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => handleEditSetting(setting)}
+                              className="text-blue-600 hover:text-blue-700 p-1"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSetting(setting.id)}
+                              className="text-red-600 hover:text-red-700 p-1"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div className="text-sm text-gray-700">
                         <strong>{setting.key}:</strong> {setting.value}

@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit3, Trash2, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import type { City } from '../../types';
+import { getUserPrivileges } from '../../utils/permissions';
+import type { City, AdminUser } from '../../types';
 
 interface CityForm {
   name: string;
@@ -25,6 +26,7 @@ export const LocationManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CityForm>({
     defaultValues: {
@@ -35,8 +37,34 @@ export const LocationManagement: React.FC = () => {
   });
 
   useEffect(() => {
+    loadCurrentUser();
     loadCities();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   const loadCities = async () => {
     setIsLoading(true);
@@ -172,13 +200,15 @@ export const LocationManagement: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900">Location Management</h2>
           <p className="text-gray-600 mt-1">Manage cities and their settings</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New City</span>
-        </button>
+        {currentUser && getUserPrivileges(currentUser.role).can_manage_content && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New City</span>
+          </button>
+        )}
       </div>
 
       {/* Error Display */}
@@ -368,20 +398,22 @@ export const LocationManagement: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditCity(city)}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCity(city.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {currentUser && getUserPrivileges(currentUser.role).can_manage_content && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditCity(city)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCity(city.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

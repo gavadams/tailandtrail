@@ -8,7 +8,9 @@ import { Plus, Edit3, Trash2, Image, ArrowUp, ArrowDown, AlertCircle, MapPin } f
 import ReactQuill from 'react-quill';
 import { supabase } from '../../lib/supabase';
 import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
-import { Game, Puzzle, SplashScreen } from '../../types';
+import { logActivity, logCreate, logUpdate, logDelete } from '../../utils/activityLogger';
+import { getUserPrivileges } from '../../utils/permissions';
+import { Game, Puzzle, SplashScreen, AdminUser } from '../../types';
 
 interface SplashScreenForm {
   title: string;
@@ -30,14 +32,41 @@ export const SplashScreenManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [splashContent, setSplashContent] = useState('');
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SplashScreenForm>();
   const watchGameId = watch('game_id');
 
   useEffect(() => {
+    loadCurrentUser();
     loadGames();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.warn('No authenticated user');
+        return;
+      }
+
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (adminError) {
+        console.warn('Could not load current user:', adminError.message);
+        return;
+      }
+
+      setCurrentUser(adminUser);
+    } catch (err) {
+      console.warn('Error loading current user:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedGameId) {
@@ -123,17 +152,39 @@ export const SplashScreenManagement: React.FC = () => {
           .eq('id', editingSplash.id);
 
         if (updateError) throw updateError;
+        
+        // Log the update activity
+        await logUpdate('splash_screen', editingSplash.id, {
+          title: data.title,
+          content: splashData.content,
+          image_url: data.image_url,
+          video_url: data.video_url,
+          game_id: data.game_id,
+          previous_title: editingSplash.title
+        });
       } else {
         const maxOrder = splashScreens.length > 0 ? Math.max(...splashScreens.map(s => s.sequence_order)) : 0;
         
-        const { error: insertError } = await supabase
+        const { data: newSplash, error: insertError } = await supabase
           .from('splash_screens')
           .insert({
             ...splashData,
             sequence_order: maxOrder + 1
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) throw insertError;
+        
+        // Log the creation activity
+        await logCreate('splash_screen', newSplash.id, {
+          title: data.title,
+          content: splashData.content,
+          image_url: data.image_url,
+          video_url: data.video_url,
+          game_id: data.game_id,
+          sequence_order: maxOrder + 1
+        });
       }
 
       reset();
@@ -174,12 +225,25 @@ export const SplashScreenManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this splash screen?')) return;
 
     try {
+      // Get splash screen info before deleting for logging
+      const splashToDelete = splashScreens.find(s => s.id === splashId);
+      
       const { error: deleteError } = await supabase
         .from('splash_screens')
         .delete()
         .eq('id', splashId);
 
       if (deleteError) throw deleteError;
+      
+      // Log the deletion activity
+      if (splashToDelete) {
+        await logDelete('splash_screen', splashId, {
+          title: splashToDelete.title,
+          game_id: splashToDelete.game_id,
+          sequence_order: splashToDelete.sequence_order
+        });
+      }
+      
       if (selectedGameId) {
         loadSplashScreensForGame(selectedGameId);
       }
@@ -209,6 +273,21 @@ export const SplashScreenManagement: React.FC = () => {
         .update({ sequence_order: currentOrder })
         .eq('id', targetSplash.id);
 
+      // Log the sequence reorder activity
+      await logActivity({
+        action: 'reorder_splash_screen',
+        resource_type: 'splash_screen',
+        resource_id: splashId,
+        details: {
+          splash_title: currentSplash.title,
+          direction: direction,
+          from_order: currentOrder,
+          to_order: targetOrder,
+          swapped_with: targetSplash.title,
+          game_id: currentSplash.game_id
+        }
+      });
+
       loadSplashScreensForGame(selectedGameId);
     } catch (err) {
       setError('Failed to reorder splash screens');
@@ -231,14 +310,16 @@ export const SplashScreenManagement: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900">Splash Screen Management</h2>
           <p className="text-gray-600 mt-1">Create story elements between puzzles</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          disabled={!selectedGameId}
-          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Splash Screen</span>
-        </button>
+        {currentUser && getUserPrivileges(currentUser.role).can_manage_splash_screens && (
+          <button
+            onClick={() => setShowForm(true)}
+            disabled={!selectedGameId}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Splash Screen</span>
+          </button>
+        )}
       </div>
 
       {/* Game Selection */}
@@ -439,42 +520,46 @@ export const SplashScreenManagement: React.FC = () => {
                     
                     <div className="flex items-center space-x-2 ml-4">
                       {/* Sequence controls */}
-                      <div className="flex flex-col space-y-1">
-                        <button
-                          onClick={() => handleMoveSequence(splash.id, 'up')}
-                          disabled={index === 0}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                          title="Move Up"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveSequence(splash.id, 'down')}
-                          disabled={index === splashScreens.length - 1}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                          title="Move Down"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {currentUser && getUserPrivileges(currentUser.role).can_manage_splash_screens && (
+                        <div className="flex flex-col space-y-1">
+                          <button
+                            onClick={() => handleMoveSequence(splash.id, 'up')}
+                            disabled={index === 0}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveSequence(splash.id, 'down')}
+                            disabled={index === splashScreens.length - 1}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                       
                       {/* Edit/Delete controls */}
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => handleEditSplash(splash)}
-                          className="text-blue-600 hover:text-blue-700 p-1"
-                          title="Edit Splash Screen"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSplash(splash.id)}
-                          className="text-red-600 hover:text-red-700 p-1"
-                          title="Delete Splash Screen"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {currentUser && getUserPrivileges(currentUser.role).can_manage_splash_screens && (
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEditSplash(splash)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Edit Splash Screen"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSplash(splash.id)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="Delete Splash Screen"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
