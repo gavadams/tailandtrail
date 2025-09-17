@@ -11,9 +11,9 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin authentication helper
-export const signInAdmin = async (password: string) => {
+export const signInAdmin = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'contact@taleandtrail.games',
+    email: email,
     password: password
   });
   return { data, error };

@@ -3,12 +3,13 @@
  * Allows admins to manage puzzles for each game with sequencing
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Plus, Edit3, Trash2, Puzzle as PuzzleIcon, ArrowUp, ArrowDown, AlertCircle, MapPin, X } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
+import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
 import type { Game, Puzzle, SplashScreen } from '../../types';
 
 
@@ -40,6 +41,65 @@ export const PuzzleManagement: React.FC = () => {
   // Rich text editor states
   const [puzzleDescription, setPuzzleDescription] = useState('');
   const [puzzleRiddle, setPuzzleRiddle] = useState('');
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Helper functions for HTML editing
+  const insertHtmlTag = (openTag: string, closeTag: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = puzzleRiddle.substring(start, end);
+    const newText = puzzleRiddle.substring(0, start) + openTag + selectedText + closeTag + puzzleRiddle.substring(end);
+    
+    setPuzzleRiddle(newText);
+    
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + openTag.length, end + openTag.length);
+    }, 0);
+  };
+
+  const insertTable = () => {
+    const tableHtml = `<table style="border-collapse: collapse; width: 100%;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="border: 1px solid #000; padding: 8px; text-align: left;">Header 1</th>
+      <th style="border: 1px solid #000; padding: 8px; text-align: left;">Header 2</th>
+      <th style="border: 1px solid #000; padding: 8px; text-align: left;">Header 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #000; padding: 8px;">Row 1, Cell 1</td>
+      <td style="border: 1px solid #000; padding: 8px;">Row 1, Cell 2</td>
+      <td style="border: 1px solid #000; padding: 8px;">Row 1, Cell 3</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #000; padding: 8px;">Row 2, Cell 1</td>
+      <td style="border: 1px solid #000; padding: 8px;">Row 2, Cell 2</td>
+      <td style="border: 1px solid #000; padding: 8px;">Row 2, Cell 3</td>
+    </tr>
+  </tbody>
+</table>`;
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const newText = puzzleRiddle.substring(0, start) + tableHtml + puzzleRiddle.substring(start);
+    setPuzzleRiddle(newText);
+    
+    // Focus textarea after insertion
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + tableHtml.length, start + tableHtml.length);
+    }, 0);
+  };
 
   const { register, control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<PuzzleForm>({
     defaultValues: {
@@ -136,8 +196,8 @@ export const PuzzleManagement: React.FC = () => {
       
       const puzzleData = {
         title: data.title,
-        description: puzzleDescription,
-        riddle: puzzleRiddle,
+        description: cleanReactQuillHtml(puzzleDescription),
+        riddle: cleanReactQuillHtml(puzzleRiddle),
         clues: clues,
         answer: data.answer,
         answer_type: data.answer_type,
@@ -189,8 +249,8 @@ export const PuzzleManagement: React.FC = () => {
   const handleEditPuzzle = (puzzle: Puzzle) => {
     setEditingPuzzle(puzzle);
     setValue('title', puzzle.title);
-    setPuzzleDescription(puzzle.description);
-    setPuzzleRiddle(puzzle.riddle);
+    setPuzzleDescription(prepareHtmlForEditing(puzzle.description));
+    setPuzzleRiddle(prepareHtmlForEditing(puzzle.riddle));
     setValue('answer', puzzle.answer);
     setValue('answer_type', puzzle.answer_type || 'text');
     setValue('answer_options', puzzle.answer_options ? puzzle.answer_options.map(option => ({ value: option })) : [{ value: '' }]);
@@ -199,6 +259,17 @@ export const PuzzleManagement: React.FC = () => {
     setValue('video_url', puzzle.video_url || '');
     setValue('clues', puzzle.clues.map(clue => ({ value: clue })));
     setShowForm(true);
+    
+    // Scroll to form after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
   };
 
   const handleDeletePuzzle = async (puzzleId: string) => {
@@ -450,7 +521,7 @@ export const PuzzleManagement: React.FC = () => {
 
       {/* Puzzle Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 border">
+        <div ref={formRef} className="bg-white rounded-lg shadow-lg p-6 border">
           <h3 className="text-xl font-bold text-gray-900 mb-4">
             {editingPuzzle ? 'Edit Puzzle' : 'Create New Puzzle'}
           </h3>
@@ -520,27 +591,161 @@ export const PuzzleManagement: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Riddle/Challenge
-              </label>
-              <ReactQuill
-                value={puzzleRiddle}
-                onChange={setPuzzleRiddle}
-                theme="snow"
-                className="bg-white"
-                placeholder="Enter the main puzzle or riddle..."
-                modules={{
-                  toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['link', 'blockquote', 'code-block'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'align': [] }],
-                    ['clean']
-                  ]
-                }}
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Riddle/Challenge
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsHtmlMode(!isHtmlMode)}
+                  className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                >
+                  {isHtmlMode ? 'Switch to Rich Text' : 'Switch to HTML'}
+                </button>
+              </div>
+              
+              {/* Check if content contains complex HTML or user wants HTML mode */}
+              {(puzzleRiddle && puzzleRiddle.includes('<table')) || isHtmlMode ? (
+                <div className="space-y-3">
+                  {puzzleRiddle && (
+                    <div className="bg-gray-50 p-3 rounded-lg border">
+                      <p className="text-sm text-gray-600 mb-2">Preview of HTML content:</p>
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: puzzleRiddle.replace(/<div>/g, '').replace(/<\/div>/g, '') }}
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Edit HTML Content:
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      💡 Tip: Select text and click formatting buttons, or use the Table button to insert a pre-formatted table
+                    </p>
+                    
+                    {/* HTML Formatting Toolbar */}
+                    <div className="flex flex-wrap gap-1 mb-2 p-2 bg-gray-100 rounded-lg border">
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<strong>', '</strong>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 font-bold"
+                        title="Bold"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<em>', '</em>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 italic"
+                        title="Italic"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<u>', '</u>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 underline"
+                        title="Underline"
+                      >
+                        U
+                      </button>
+                      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<h1>', '</h1>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Heading 1"
+                      >
+                        H1
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<h2>', '</h2>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Heading 2"
+                      >
+                        H2
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<h3>', '</h3>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Heading 3"
+                      >
+                        H3
+                      </button>
+                      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<p>', '</p>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Paragraph"
+                      >
+                        P
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<br>', '')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Line Break"
+                      >
+                        BR
+                      </button>
+                      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                      <button
+                        type="button"
+                        onClick={() => insertTable()}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Insert Table"
+                      >
+                        Table
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertHtmlTag('<div style="text-align: center;">', '</div>')}
+                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                        title="Center Text"
+                      >
+                        Center
+                      </button>
+                    </div>
+                    
+                    <textarea
+                      ref={textareaRef}
+                      value={puzzleRiddle.replace(/<div>/g, '').replace(/<\/div>/g, '')}
+                      onChange={(e) => setPuzzleRiddle(e.target.value)}
+                      className="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-mono text-sm"
+                      placeholder="Enter HTML content or use the toolbar above..."
+                    />
+                  </div>
+                </div>
+              ) : (
+                <ReactQuill
+                  value={puzzleRiddle}
+                  onChange={setPuzzleRiddle}
+                  theme="snow"
+                  className="bg-white"
+                  placeholder="Enter the main puzzle or riddle..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['link', 'blockquote', 'code-block'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'align': [] }],
+                      ['clean']
+                    ]
+                  }}
+                  formats={[
+                    'header', 'bold', 'italic', 'underline', 'strike',
+                    'list', 'bullet', 'link', 'blockquote', 'code-block',
+                    'color', 'background', 'align'
+                  ]}
+                />
+              )}
+              
               {!puzzleRiddle.trim() && (
                 <p className="text-red-600 text-sm mt-1">Riddle is required</p>
               )}
@@ -760,28 +965,28 @@ export const PuzzleManagement: React.FC = () => {
                   {/* Puzzle */}
                   <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full font-medium">
                           #{puzzle.sequence_order}
                         </span>
-                        <h4 className="text-lg font-bold text-gray-900">{puzzle.title}</h4>
+                        <h4 className="text-lg font-bold text-gray-900 truncate">{puzzle.title}</h4>
                       </div>
                       <div 
-                        className="prose prose-sm max-w-none text-gray-600 text-sm mb-2"
+                        className="prose prose-sm max-w-none text-gray-600 text-sm mb-2 break-words overflow-hidden"
                         dangerouslySetInnerHTML={{ __html: puzzle.description }}
                       />
                       <div 
-                        className="prose prose-sm max-w-none text-gray-800 font-medium mb-2"
+                        className="prose prose-sm max-w-none text-gray-800 font-medium mb-2 break-words overflow-hidden"
                         dangerouslySetInnerHTML={{ __html: puzzle.riddle }}
                       />
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span>{puzzle.clues.length} clues</span>
-                        <span>Answer: {puzzle.answer}</span>
+                        <span className="truncate">Answer: {puzzle.answer}</span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
                       {/* Sequence controls */}
                       <div className="flex flex-col space-y-1">
                         <button

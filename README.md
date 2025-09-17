@@ -52,8 +52,9 @@ A comprehensive web application for managing and playing Tale and Trail games. F
 3. **Create Admin Account**
    - Go to your Supabase project dashboard
    - Navigate to Authentication > Users
-   - Create a new user with email: `contact@taleandtrail.games`
+   - Create a new user with your admin email address
    - Set a secure password for admin access
+   - You can create multiple admin accounts as needed
 
 4. **Start Development**
    ```bash
@@ -66,7 +67,7 @@ A comprehensive web application for managing and playing Tale and Trail games. F
 
 1. **Access Admin Panel**
    - Navigate to `/admin`
-   - Login with the admin credentials
+   - Login with your admin email and password
 
 2. **Create Games**
    - Go to "Games" section

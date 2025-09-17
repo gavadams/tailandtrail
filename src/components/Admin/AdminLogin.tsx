@@ -9,6 +9,7 @@ import { Shield, AlertCircle, Crown } from 'lucide-react';
 import { signInAdmin } from '../../lib/supabase';
 
 interface AdminLoginForm {
+  email: string;
   password: string;
 }
 
@@ -26,10 +27,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     setError(null);
 
     try {
-      const { error: authError } = await signInAdmin(data.password);
+      const { error: authError } = await signInAdmin(data.email, data.password);
       
       if (authError) {
-        setError('Invalid admin password. Please try again.');
+        setError('Invalid email or password. Please try again.');
       } else {
         onLogin();
       }
@@ -68,6 +69,31 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit(handleLogin)} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-bold text-slate-900 mb-2">
+              Admin Email
+            </label>
+            <input
+              {...register('email', { 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Please enter a valid email address'
+                }
+              })}
+              type="email"
+              id="email"
+              placeholder="Enter admin email..."
+              className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none transition-colors text-lg"
+            />
+            {errors.email && (
+              <p className="text-red-600 text-sm mt-1 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
           <div>
             <label htmlFor="password" className="block text-sm font-bold text-slate-900 mb-2">
               Admin Password

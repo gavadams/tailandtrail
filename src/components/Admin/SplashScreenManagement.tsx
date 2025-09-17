@@ -2,11 +2,12 @@
  * Splash screen management for story narrative between puzzles
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit3, Trash2, Image, ArrowUp, ArrowDown, AlertCircle, MapPin } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import { supabase } from '../../lib/supabase';
+import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
 import { Game, Puzzle, SplashScreen } from '../../types';
 
 interface SplashScreenForm {
@@ -29,6 +30,7 @@ export const SplashScreenManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [splashContent, setSplashContent] = useState('');
+  const formRef = useRef<HTMLDivElement>(null);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SplashScreenForm>();
   const watchGameId = watch('game_id');
@@ -107,7 +109,7 @@ export const SplashScreenManagement: React.FC = () => {
     try {
       const splashData = {
         ...data,
-        content: splashContent,
+        content: cleanReactQuillHtml(splashContent),
         puzzle_id: null // Always create as unassigned - position managed in Puzzle Management
       };
 
@@ -153,8 +155,19 @@ export const SplashScreenManagement: React.FC = () => {
     setValue('video_url', splash.video_url || '');
     setValue('game_id', splash.game_id);
     setValue('sequence_order', splash.sequence_order);
-    setSplashContent(splash.content);
+    setSplashContent(prepareHtmlForEditing(splash.content));
     setShowForm(true);
+    
+    // Scroll to form after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
   };
 
   const handleDeleteSplash = async (splashId: string) => {
@@ -259,7 +272,7 @@ export const SplashScreenManagement: React.FC = () => {
 
       {/* Splash Screen Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 border">
+        <div ref={formRef} className="bg-white rounded-lg shadow-lg p-6 border">
           <h3 className="text-xl font-bold text-gray-900 mb-4">
             {editingSplash ? 'Edit Splash Screen' : 'Create New Splash Screen'}
           </h3>

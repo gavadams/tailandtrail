@@ -3,12 +3,13 @@
  * Allows editing of site content, pages, and settings
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit3, Trash2, Save, Eye, Settings, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import { supabase } from '../../lib/supabase';
+import { cleanReactQuillHtml, prepareHtmlForEditing } from '../../utils/htmlUtils';
 import { ContentPage, SiteSettings } from '../../types';
 import { useContentStore } from '../../stores/contentStore';
 import { ThemeOverlayManagement } from './ThemeOverlayManagement';
@@ -50,6 +51,7 @@ export const ContentManagement: React.FC = () => {
   const { register: registerSetting, handleSubmit: handleSubmitSetting, reset: resetSetting, setValue: setSettingValue, formState: { errors: settingErrors } } = useForm<SettingForm>();
 
   const [pageContent, setPageContent] = useState('');
+  const formRef = useRef<HTMLDivElement>(null);
   const { setPages: updateStorePages, setSettings: updateStoreSettings } = useContentStore();
 
   useEffect(() => {
@@ -101,7 +103,7 @@ export const ContentManagement: React.FC = () => {
     try {
       const pageData = {
         ...data,
-        content: pageContent,
+        content: cleanReactQuillHtml(pageContent),
         slug: data.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
       };
 
@@ -178,8 +180,19 @@ export const ContentManagement: React.FC = () => {
     setPageValue('is_published', page.is_published);
     setPageValue('show_in_nav', page.show_in_nav);
     setPageValue('nav_order', page.nav_order);
-    setPageContent(page.content);
+    setPageContent(prepareHtmlForEditing(page.content));
     setShowPageForm(true);
+    
+    // Scroll to form after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
   };
 
   const handleEditSetting = (setting: SiteSettings) => {
@@ -226,7 +239,7 @@ export const ContentManagement: React.FC = () => {
   };
 
   const renderPageForm = () => (
-    <div className="bg-white rounded-lg shadow-lg p-6 border">
+    <div ref={formRef} className="bg-white rounded-lg shadow-lg p-6 border">
       <h3 className="text-xl font-bold text-gray-900 mb-4">
         {editingPage ? 'Edit Page' : 'Create New Page'}
       </h3>
