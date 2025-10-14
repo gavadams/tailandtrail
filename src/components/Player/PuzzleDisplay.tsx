@@ -34,7 +34,8 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
     markPuzzleComplete,
     setCurrentPuzzle,
     setSession,
-    setError
+    setError,
+    isTestMode
   } = useGameStore();
 
   useEffect(() => {
