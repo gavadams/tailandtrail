@@ -40,6 +40,7 @@ export const PuzzleManagement: React.FC = () => {
   
   // Splash screen states
   const [splashScreens, setSplashScreens] = useState<SplashScreen[]>([]);
+  const [removedSplashScreens, setRemovedSplashScreens] = useState<Set<string>>(new Set());
 
   // Rich text editor states
   const [puzzleDescription, setPuzzleDescription] = useState('');
@@ -158,9 +159,12 @@ export const PuzzleManagement: React.FC = () => {
     if (selectedGameId) {
       loadPuzzlesForGame(selectedGameId);
       loadSplashScreensForGame(selectedGameId);
+      // Clear removed splash screens when switching games
+      setRemovedSplashScreens(new Set());
     } else {
       setPuzzles([]);
       setSplashScreens([]);
+      setRemovedSplashScreens(new Set());
     }
   }, [selectedGameId]);
 
@@ -426,8 +430,15 @@ export const PuzzleManagement: React.FC = () => {
     try {
       console.log('Repositioning splash screen:', splashScreenId, 'to:', newPuzzleId);
       
-      // Handle removal case - set puzzle_id to a special value to indicate unassigned
-      const updateData = newPuzzleId === null ? { puzzle_id: 'UNASSIGNED' } : { puzzle_id: newPuzzleId };
+      if (newPuzzleId === null) {
+        // Handle removal case - track as removed instead of updating database
+        setRemovedSplashScreens(prev => new Set([...prev, splashScreenId]));
+        console.log('Marked splash screen as removed:', splashScreenId);
+        return;
+      }
+      
+      // Handle assignment case - update database and remove from removed set
+      const updateData = { puzzle_id: newPuzzleId };
       
       const { error } = await supabase
         .from('splash_screens')
@@ -438,6 +449,13 @@ export const PuzzleManagement: React.FC = () => {
         console.error('Supabase error:', error);
         throw error;
       }
+      
+      // Remove from removed set if it was there
+      setRemovedSplashScreens(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(splashScreenId);
+        return newSet;
+      });
       
       console.log('Successfully repositioned splash screen');
       // Small delay to ensure database has updated
@@ -454,12 +472,12 @@ export const PuzzleManagement: React.FC = () => {
   const renderSplashSection = (puzzleId: string | null | 'END', title: string) => {
     // Handle the 'END' case - we'll use a special marker for splash screens after the last puzzle
     const actualPuzzleId = puzzleId === 'END' ? 'END' : puzzleId;
-    const positionSplashScreens = splashScreens.filter(s => s.puzzle_id === actualPuzzleId && s.puzzle_id !== 'UNASSIGNED');
+    const positionSplashScreens = splashScreens.filter(s => s.puzzle_id === actualPuzzleId && !removedSplashScreens.has(s.id));
     
     console.log(`Rendering section for ${actualPuzzleId}:`, positionSplashScreens.map(s => ({ id: s.id, title: s.title, puzzle_id: s.puzzle_id })));
     
-    // Get all splash screens for dropdown options (exclude unassigned ones from current position)
-    const allSplashScreens = splashScreens.filter(s => s.puzzle_id !== 'UNASSIGNED');
+    // Get all splash screens for dropdown options (including removed ones for reassignment)
+    const allSplashScreens = splashScreens;
     
     return (
       <div key={`splash-section-${actualPuzzleId}-${splashScreens.length}`} className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -495,9 +513,9 @@ export const PuzzleManagement: React.FC = () => {
                   <option key={s.id} value={s.id}>
                     {s.title} {
                       s.puzzle_id === actualPuzzleId ? '(current)' :
+                      removedSplashScreens.has(s.id) ? '(removed)' :
                       s.puzzle_id === null ? '(before puzzle 1)' :
                       s.puzzle_id === 'END' ? '(after last puzzle)' :
-                      s.puzzle_id === 'UNASSIGNED' ? '(unassigned)' :
                       '(assigned elsewhere)'
                     }
                   </option>
@@ -533,9 +551,9 @@ export const PuzzleManagement: React.FC = () => {
                 return (
                   <option key={s.id} value={s.id}>
                     {s.title} {
+                      removedSplashScreens.has(s.id) ? '(removed)' :
                       s.puzzle_id === null ? '(before puzzle 1)' :
                       s.puzzle_id === 'END' ? '(after last puzzle)' :
-                      s.puzzle_id === 'UNASSIGNED' ? '(unassigned)' :
                       '(assigned elsewhere)'
                     }
                   </option>
