@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Minimize2, Trash2, FileText } from 'lucide-react';
+import { X, Trash2, FileText } from 'lucide-react';
 import { useGameStore } from '../../stores/gameStore';
 
 interface NotepadProps {
@@ -13,7 +13,6 @@ interface NotepadProps {
 
 export const Notepad: React.FC<NotepadProps> = ({ puzzleId }) => {
   const [content, setContent] = useState('');
-  const [isMinimized, setIsMinimized] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const {
@@ -62,9 +61,6 @@ export const Notepad: React.FC<NotepadProps> = ({ puzzleId }) => {
     clearPuzzleNotes(puzzleId);
   };
 
-  const handleMinimize = () => {
-    setIsMinimized(!isMinimized);
-  };
 
   const handleClose = () => {
     toggleNotepad();
@@ -74,7 +70,6 @@ export const Notepad: React.FC<NotepadProps> = ({ puzzleId }) => {
     setContent(e.target.value);
   };
 
-  const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
 
   if (!isNotepadOpen) {
     return null;
@@ -93,43 +88,25 @@ export const Notepad: React.FC<NotepadProps> = ({ puzzleId }) => {
         fixed right-0 top-0 h-full bg-white shadow-2xl z-50
         flex flex-col
         transition-all duration-300 ease-in-out
-        ${isMinimized ? 'w-12' : 'w-80 md:w-96'}
+        w-80 md:w-96
         ${isNotepadOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         
         {/* Header */}
         <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200">
-          {!isMinimized && (
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-gray-600" />
-              <h3 className="font-medium text-gray-900">Notes</h3>
-              {wordCount > 0 && (
-                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                  {wordCount} words
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <FileText className="h-5 w-5 text-gray-600" />
+            <h3 className="font-medium text-gray-900">Notes</h3>
+          </div>
           
           <div className="flex items-center space-x-1">
-            {!isMinimized && (
-              <>
-                <button
-                  onClick={handleClear}
-                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                  title="Clear notes"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={handleMinimize}
-                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                  title="Minimize"
-                >
-                  <Minimize2 className="h-4 w-4" />
-                </button>
-              </>
-            )}
+            <button
+              onClick={handleClear}
+              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              title="Clear notes"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
             <button
               onClick={handleClose}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
@@ -141,36 +118,26 @@ export const Notepad: React.FC<NotepadProps> = ({ puzzleId }) => {
         </div>
 
         {/* Content */}
-        {!isMinimized && (
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 p-3">
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={handleContentChange}
-                placeholder="Type your thoughts, clues, and ideas here..."
-                className="w-full h-full resize-none border-none outline-none text-sm leading-relaxed"
-                style={{ minHeight: '200px' }}
-                autoFocus
-              />
-            </div>
-            
-            {/* Footer */}
-            <div className="p-3 bg-gray-50 border-t border-gray-200">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Auto-saves as you type</span>
-                <span>{content.length} characters</span>
-              </div>
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 p-3">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleContentChange}
+              placeholder="Type your thoughts, clues, and ideas here..."
+              className="w-full h-full resize-none border-none outline-none text-sm leading-relaxed"
+              style={{ minHeight: '200px' }}
+              autoFocus
+            />
+          </div>
+          
+          {/* Footer */}
+          <div className="p-3 bg-gray-50 border-t border-gray-200">
+            <div className="text-xs text-gray-500">
+              Auto-saves as you type
             </div>
           </div>
-        )}
-
-        {/* Minimized state - just show icon */}
-        {isMinimized && (
-          <div className="flex-1 flex items-center justify-center">
-            <FileText className="h-6 w-6 text-gray-600" />
-          </div>
-        )}
+        </div>
       </div>
     </>
   );
