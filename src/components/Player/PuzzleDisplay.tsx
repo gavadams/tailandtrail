@@ -5,10 +5,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Lightbulb, CheckCircle, XCircle, ArrowRight, Eye } from 'lucide-react';
+import { Lightbulb, CheckCircle, ArrowRight, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useGameStore } from '../../stores/gameStore';
-import { Puzzle } from '../../types';
 
 interface AnswerForm {
   answer: string;
@@ -35,7 +34,8 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
     setCurrentPuzzle,
     setSession,
     setError,
-    isTestMode
+    isTestMode,
+    clearPuzzleNotes
   } = useGameStore();
 
   useEffect(() => {
@@ -73,10 +73,10 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
         Math.floor((now.getTime() - puzzleStartTime.getTime()) / 1000) : null;
 
       await supabase.from('puzzle_interactions').insert({
-        player_session_id: currentSession.id,
+        player_session_id: currentSession!.id,
         puzzle_id: currentPuzzle.id,
         game_id: currentPuzzle.game_id,
-        access_code_id: currentSession.access_code_id,
+        access_code_id: currentSession!.access_code_id,
         action_type: actionType,
         hint_index: data?.hintIndex,
         hint_text: data?.hintText,
@@ -113,6 +113,9 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
         // In test mode, just show success and call the callback
         setShowAnswer(true);
         
+        // Clear notepad notes for completed puzzle in test mode
+        clearPuzzleNotes(currentPuzzle.id);
+        
         // Call onPuzzleComplete callback if provided (for test mode)
         if (onPuzzleComplete) {
           onPuzzleComplete(currentPuzzle.id);
@@ -127,7 +130,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       }
 
       // Normal mode: Mark puzzle as complete
-      const updatedCompletedPuzzles = [...currentSession.completed_puzzles, currentPuzzle.id];
+      const updatedCompletedPuzzles = [...currentSession!.completed_puzzles, currentPuzzle.id];
       
       // Update session in database
       const { error: updateError } = await supabase
@@ -136,7 +139,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
           completed_puzzles: updatedCompletedPuzzles,
           last_activity: new Date().toISOString()
         })
-        .eq('id', currentSession.id);
+        .eq('id', currentSession!.id);
 
       if (updateError) {
         setError('Failed to save progress');
@@ -150,9 +153,12 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       // Update local state
       markPuzzleComplete(currentPuzzle.id);
       setSession({
-        ...currentSession,
+        ...currentSession!,
         completed_puzzles: updatedCompletedPuzzles
       });
+
+      // Clear notepad notes for completed puzzle
+      clearPuzzleNotes(currentPuzzle.id);
 
       setShowAnswer(true);
       
@@ -221,13 +227,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       }
       
       // Show encouraging message for wrong answers
-      const encouragements = [
-        "Not quite! Try again with the clue below.",
-        "Close! Check out the hint that just appeared.",
-        "Keep thinking! A new clue is now available.",
-        "Almost there! Use the new clue to guide you."
-      ];
-      // You could show these messages in a toast or temporary display
+      // You could show encouraging messages in a toast or temporary display
     }
     
     setIsSubmitting(false);

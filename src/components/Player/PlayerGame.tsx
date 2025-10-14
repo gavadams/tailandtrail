@@ -8,6 +8,8 @@ import { Header } from '../Layout/Header';
 import { ProgressIndicator } from './ProgressIndicator';
 import { PuzzleDisplay } from './PuzzleDisplay';
 import { SplashScreen } from './SplashScreen';
+import { Notepad } from './Notepad';
+import { NotepadToggle } from './NotepadToggle';
 import { useGameStore } from '../../stores/gameStore';
 import { supabase } from '../../lib/supabase';
 import { SplashScreen as SplashScreenType } from '../../types';
@@ -454,6 +456,14 @@ export const PlayerGame: React.FC = () => {
           </>
         )}
       </div>
+      
+      {/* Notepad Components - Only show during puzzles, not splash screens */}
+      {currentPuzzle && !showSplash && (
+        <>
+          <NotepadToggle />
+          <Notepad puzzleId={currentPuzzle.id} />
+        </>
+      )}
     </div>
   );
 };

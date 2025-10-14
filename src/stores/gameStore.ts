@@ -22,6 +22,10 @@ interface GameState {
   revealedClues: number;
   isTestMode: boolean;
   
+  // Notepad state
+  puzzleNotes: Record<string, string>;
+  isNotepadOpen: boolean;
+  
   // Actions
   setSession: (session: PlayerSession) => void;
   setGame: (game: Game) => void;
@@ -36,6 +40,12 @@ interface GameState {
   resetClues: () => void;
   markPuzzleComplete: (puzzleId: string) => void;
   clearSession: () => void;
+  
+  // Notepad actions
+  setPuzzleNote: (puzzleId: string, content: string) => void;
+  clearPuzzleNotes: (puzzleId: string) => void;
+  toggleNotepad: () => void;
+  getNotesKey: (puzzleId: string) => string;
 }
 
 export const useGameStore = create<GameState>()(
@@ -51,6 +61,10 @@ export const useGameStore = create<GameState>()(
       error: null,
       revealedClues: 0,
       isTestMode: false,
+      
+      // Notepad state
+      puzzleNotes: {},
+      isNotepadOpen: false,
 
       setSession: (session) => set({ currentSession: session }),
       setGame: (game) => set({ currentGame: game }),
@@ -93,8 +107,56 @@ export const useGameStore = create<GameState>()(
         accessCode: null,
         revealedClues: 0,
         error: null,
-        isTestMode: false
-      })
+        isTestMode: false,
+        puzzleNotes: {},
+        isNotepadOpen: false
+      }),
+      
+      // Notepad actions
+      getNotesKey: (puzzleId) => {
+        const { currentSession } = get();
+        if (currentSession?.id) {
+          return `session_${currentSession.id}_${puzzleId}`;
+        }
+        return `local_${puzzleId}`;
+      },
+      
+      setPuzzleNote: (puzzleId, content) => {
+        const { getNotesKey } = get();
+        const notesKey = getNotesKey(puzzleId);
+        set((state) => ({
+          puzzleNotes: {
+            ...state.puzzleNotes,
+            [notesKey]: content
+          }
+        }));
+        
+        // Auto-save to localStorage
+        try {
+          localStorage.setItem(`notepad_${notesKey}`, content);
+        } catch (error) {
+          console.warn('Failed to save notepad to localStorage:', error);
+        }
+      },
+      
+      clearPuzzleNotes: (puzzleId) => {
+        const { getNotesKey } = get();
+        const notesKey = getNotesKey(puzzleId);
+        set((state) => {
+          const newNotes = { ...state.puzzleNotes };
+          delete newNotes[notesKey];
+          return { puzzleNotes: newNotes };
+        });
+        
+        // Clear from localStorage
+        try {
+          localStorage.removeItem(`notepad_${notesKey}`);
+        } catch (error) {
+          console.warn('Failed to clear notepad from localStorage:', error);
+        }
+      },
+      
+      toggleNotepad: () => set((state) => ({ isNotepadOpen: !state.isNotepadOpen }))
     }),
     {
       name: 'pub-puzzle-session',
@@ -103,7 +165,8 @@ export const useGameStore = create<GameState>()(
         currentGame: state.currentGame,
         puzzles: state.puzzles,
         accessCode: state.accessCode,
-        revealedClues: state.revealedClues
+        revealedClues: state.revealedClues,
+        puzzleNotes: state.puzzleNotes
       })
     }
   )
