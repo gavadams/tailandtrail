@@ -59,7 +59,11 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       isCorrect?: boolean;
     }
   ) => {
-    if (!currentPuzzle || !currentSession) return;
+    // Skip tracking in test mode or if no session/puzzle
+    if (!currentPuzzle || (!currentSession && !isTestMode)) return;
+    
+    // Skip database operations in test mode
+    if (isTestMode) return;
 
     try {
       const now = new Date();
@@ -90,20 +94,38 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
   };
 
   const submitAnswer = async (data: AnswerForm) => {
-    if (!currentPuzzle || !currentSession) return;
+    // Allow test mode to proceed without session, but require session for normal mode
+    if (!currentPuzzle || (!currentSession && !isTestMode)) return;
 
     setIsSubmitting(true);
     const userAnswer = data.answer.toLowerCase().trim();
     const correctAnswer = currentPuzzle.answer.toLowerCase().trim();
 
     if (userAnswer === correctAnswer) {
-      // Track correct answer
+      // Track correct answer (skipped in test mode)
       await trackPuzzleInteraction('correct_answer', {
         userAnswer: data.answer,
         isCorrect: true
       });
 
-      // Mark puzzle as complete
+      if (isTestMode) {
+        // In test mode, just show success and call the callback
+        setShowAnswer(true);
+        
+        // Call onPuzzleComplete callback if provided (for test mode)
+        if (onPuzzleComplete) {
+          onPuzzleComplete(currentPuzzle.id);
+        }
+        
+        // Scroll to top to show success message
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        setIsSubmitting(false);
+        reset();
+        return;
+      }
+
+      // Normal mode: Mark puzzle as complete
       const updatedCompletedPuzzles = [...currentSession.completed_puzzles, currentPuzzle.id];
       
       // Update session in database
@@ -147,7 +169,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       }, 3000);
       
     } else {
-      // Track wrong answer
+      // Track wrong answer (skipped in test mode)
       await trackPuzzleInteraction('wrong_answer', {
         userAnswer: data.answer,
         isCorrect: false
@@ -160,7 +182,7 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
         
         revealNextClue();
         
-        // Track hint reveal
+        // Track hint reveal (skipped in test mode)
         await trackPuzzleInteraction('hint_revealed', {
           hintIndex: newClueIndex,
           hintText: newClueText
@@ -212,7 +234,8 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
   };
 
   const goToNextPuzzle = () => {
-    if (!currentPuzzle || !currentSession) return;
+    // Allow test mode to proceed without session
+    if (!currentPuzzle || (!currentSession && !isTestMode)) return;
 
     const currentIndex = puzzles.findIndex(p => p.id === currentPuzzle.id);
     const nextPuzzle = puzzles[currentIndex + 1];
@@ -223,11 +246,13 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       // Scroll to top when moving to next puzzle
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      // Update current puzzle in session
-      supabase
-        .from('player_sessions')
-        .update({ current_puzzle_id: nextPuzzle.id })
-        .eq('id', currentSession.id);
+      // Update current puzzle in session (skip in test mode)
+      if (!isTestMode && currentSession) {
+        supabase
+          .from('player_sessions')
+          .update({ current_puzzle_id: nextPuzzle.id })
+          .eq('id', currentSession.id);
+      }
     }
   };
 
