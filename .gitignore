@@ -93,3 +93,7 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+
+# Sitemap
+/public/sitemap.xml
+/public/robots.txt

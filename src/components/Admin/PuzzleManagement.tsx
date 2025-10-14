@@ -426,7 +426,8 @@ export const PuzzleManagement: React.FC = () => {
     try {
       console.log('Repositioning splash screen:', splashScreenId, 'to:', newPuzzleId);
       
-      const updateData = newPuzzleId === null ? { puzzle_id: null } : { puzzle_id: newPuzzleId };
+      // Handle removal case - set puzzle_id to a special value to indicate unassigned
+      const updateData = newPuzzleId === null ? { puzzle_id: 'UNASSIGNED' } : { puzzle_id: newPuzzleId };
       
       const { error } = await supabase
         .from('splash_screens')
@@ -453,12 +454,12 @@ export const PuzzleManagement: React.FC = () => {
   const renderSplashSection = (puzzleId: string | null | 'END', title: string) => {
     // Handle the 'END' case - we'll use a special marker for splash screens after the last puzzle
     const actualPuzzleId = puzzleId === 'END' ? 'END' : puzzleId;
-    const positionSplashScreens = splashScreens.filter(s => s.puzzle_id === actualPuzzleId);
+    const positionSplashScreens = splashScreens.filter(s => s.puzzle_id === actualPuzzleId && s.puzzle_id !== 'UNASSIGNED');
     
     console.log(`Rendering section for ${actualPuzzleId}:`, positionSplashScreens.map(s => ({ id: s.id, title: s.title, puzzle_id: s.puzzle_id })));
     
-    // Get all splash screens for dropdown options
-    const allSplashScreens = splashScreens;
+    // Get all splash screens for dropdown options (exclude unassigned ones from current position)
+    const allSplashScreens = splashScreens.filter(s => s.puzzle_id !== 'UNASSIGNED');
     
     return (
       <div key={`splash-section-${actualPuzzleId}-${splashScreens.length}`} className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -496,6 +497,7 @@ export const PuzzleManagement: React.FC = () => {
                       s.puzzle_id === actualPuzzleId ? '(current)' :
                       s.puzzle_id === null ? '(before puzzle 1)' :
                       s.puzzle_id === 'END' ? '(after last puzzle)' :
+                      s.puzzle_id === 'UNASSIGNED' ? '(unassigned)' :
                       '(assigned elsewhere)'
                     }
                   </option>
@@ -508,13 +510,6 @@ export const PuzzleManagement: React.FC = () => {
               >
                 <X className="h-4 w-4" />
               </button>
-              <a
-                href={`#splash-management`}
-                className="text-blue-600 hover:text-blue-700 text-xs px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
-                title="Edit in Splash Screen Management"
-              >
-                Edit
-              </a>
             </div>
           ))}
           
@@ -540,6 +535,7 @@ export const PuzzleManagement: React.FC = () => {
                     {s.title} {
                       s.puzzle_id === null ? '(before puzzle 1)' :
                       s.puzzle_id === 'END' ? '(after last puzzle)' :
+                      s.puzzle_id === 'UNASSIGNED' ? '(unassigned)' :
                       '(assigned elsewhere)'
                     }
                   </option>
