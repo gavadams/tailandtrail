@@ -69,13 +69,13 @@ function App() {
   useEffect(() => {
     // Initialize content store (loads settings and pages)
     initialize();
-  }, [initialize]);
-
-  useEffect(() => {
+    
+    // Load game data if session exists
+    const { currentSession } = useGameStore.getState();
     if (currentSession) {
       loadGameData(currentSession);
     }
-  }, [currentSession]);
+  }, []);
 
   const loadGameData = async (session: any) => {
     try {
@@ -85,7 +85,7 @@ function App() {
         .select('*')
         .eq('id', session.game_id)
         .single();
-
+      
       if (gameData) {
         useGameStore.getState().setGame(gameData);
       }
@@ -96,7 +96,7 @@ function App() {
         .select('*')
         .eq('game_id', session.game_id)
         .order('sequence_order');
-
+      
       if (puzzlesData) {
         useGameStore.getState().setPuzzles(puzzlesData);
       }
@@ -107,7 +107,7 @@ function App() {
         .select('*')
         .eq('id', session.access_code_id)
         .single();
-
+      
       if (codeData) {
         useGameStore.getState().setAccessCode(codeData);
       }
@@ -163,15 +163,15 @@ function App() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/sitemap.xml" element={<SitemapPage />} />
-
+          
           {/* Location pages for SEO */}
           <Route path="/locations/:citySlug" element={<LocationPage />} />
-
+          
           {/* Dynamic pages from CMS */}
           <Route path="/privacy" element={<DynamicPage slug="privacy" />} />
           <Route path="/terms" element={<DynamicPage slug="terms" />} />
           <Route path="/:slug" element={<DynamicPage />} />
-
+          
           <Route
             path="/play"
             element={
@@ -214,7 +214,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-
+      
       <Footer />
       <ThemeOverlay />
       <Analytics />
