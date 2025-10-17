@@ -439,7 +439,7 @@ export const PlayerGame: React.FC = () => {
       </div>
       
       {/* Session Info Footer */}
-      <div className="fixed bottom-4 right-4 bg-gray-800 text-yellow-200 px-4 py-2 rounded-lg shadow-lg text-sm border border-yellow-600">
+      <div className="fixed bottom-4 left-4 bg-gray-800 text-yellow-200 px-4 py-2 rounded-lg shadow-lg text-sm border border-yellow-600">
         {accessCode?.code === 'TEST2025' ? (
           <span className="text-green-400 font-bold">🧪 TEST MODE - Never Expires</span>
         ) : accessCode && accessCode.activated_at && (
