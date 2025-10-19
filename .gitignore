@@ -97,3 +97,7 @@ temp/
 # Sitemap
 /public/sitemap.xml
 /public/robots.txt
+
+# migrations
+supabase/migrations/
+*.sql
