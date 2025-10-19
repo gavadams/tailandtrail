@@ -71,6 +71,12 @@ function App() {
     initialize();
   }, [initialize]);
 
+  useEffect(() => {
+    if (currentSession) {
+      loadGameData(currentSession);
+    }
+  }, [currentSession]);
+
   // Show loading state while settings are loading
   if (isLoading || !isAppReady) {
     return (
@@ -82,12 +88,6 @@ function App() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (currentSession) {
-      loadGameData(currentSession);
-    }
-  }, [currentSession]);
 
   const loadGameData = async (session: any) => {
     try {
