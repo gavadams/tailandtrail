@@ -192,7 +192,10 @@ export const AnalyticsDashboard: React.FC = () => {
         .sort((a, b) => a.hintIndex - b.hintIndex);
 
       // Calculate overall stats
-      const totalPlayers = analyticsData?.reduce((sum: number, puzzle: any) => sum + Number(puzzle.total_players), 0) || 0;
+      // Use the unique_players_game field which contains the correct count
+      const totalPlayers = analyticsData?.length > 0 
+        ? Number(analyticsData[0].unique_players_game) || 0
+        : 0;
       const avgSolveTime = analyticsData?.length > 0 
         ? analyticsData.reduce((sum: number, puzzle: any) => sum + Number(puzzle.avg_solve_time), 0) / analyticsData.length 
         : 0;
