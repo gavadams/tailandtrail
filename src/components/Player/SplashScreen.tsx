@@ -26,41 +26,34 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ splashScreen, onCont
         <div className="bg-gradient-to-b from-gray-100 to-gray-50 rounded-2xl shadow-2xl overflow-hidden border-4 border-yellow-600">
           {/* Media Section */}
           {(splashScreen.image_url || splashScreen.video_url) && (
-            <div className="relative bg-gray-900">
+            <div className="bg-gray-900">
               {splashScreen.video_url ? (
-                <div className="relative">
-                  <video 
-                    className="w-full h-auto object-contain"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                  >
-                    <source src={splashScreen.video_url} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-end">
-                    <div className="p-6 text-center">
-                      <h1 className="text-3xl md:text-4xl font-bold text-yellow-100 mb-2">
-                        {splashScreen.title}
-                      </h1>
-                    </div>
-                  </div>
-                </div>
+                <video 
+                  className="w-full h-auto object-contain"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                >
+                  <source src={splashScreen.video_url} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               ) : (
-                <div className="relative">
-                  <img 
-                    src={splashScreen.image_url} 
-                    alt={splashScreen.title}
-                    className="w-full h-auto object-contain"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-6 text-center">
-                    <h1 className="text-3xl md:text-4xl font-bold text-yellow-100 mb-2">
-                      {splashScreen.title}
-                    </h1>
-                  </div>
-                </div>
+                <img 
+                  src={splashScreen.image_url} 
+                  alt={splashScreen.title}
+                  className="w-full h-auto object-contain"
+                />
               )}
+            </div>
+          )}
+
+          {/* Title Section - Now below media */}
+          {(splashScreen.image_url || splashScreen.video_url) && (
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 p-6 text-center">
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                {splashScreen.title}
+              </h1>
             </div>
           )}
 
