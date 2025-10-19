@@ -2,18 +2,13 @@
  * Site footer with dynamic content and links
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Beer, Mail, Phone, MapPin, Instagram } from 'lucide-react';
 import { useContentStore } from '../../stores/contentStore';
 
 export const Footer: React.FC = () => {
-  const { getSetting, refreshSettings } = useContentStore();
-
-  useEffect(() => {
-    // Refresh settings when footer mounts
-    refreshSettings();
-  }, [refreshSettings]);
+  const { getSetting } = useContentStore();
 
   return (
     <footer className="bg-gradient-to-r from-gray-900 via-black to-gray-900 text-yellow-200">
