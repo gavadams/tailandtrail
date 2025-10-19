@@ -114,7 +114,7 @@ export const PlayerGame: React.FC = () => {
             setShowSplash(true);
           } else {
             // No final splash screens, show completion screen
-            puzzleToShow = puzzles[puzzles.length - 1];
+          puzzleToShow = puzzles[puzzles.length - 1];
           }
         }
         
@@ -280,7 +280,7 @@ export const PlayerGame: React.FC = () => {
         // Show completion screen (last puzzle)
         setCurrentPuzzle(puzzles[puzzles.length - 1]);
       } else if (isTestMode && !currentPuzzle && puzzles.length > 0) {
-        // In test mode, make sure we have a puzzle to show
+      // In test mode, make sure we have a puzzle to show
         setCurrentPuzzle(puzzles[0]);
       }
     }
@@ -325,7 +325,7 @@ export const PlayerGame: React.FC = () => {
         setShowSplash(true);
       } else {
         // No final splash screens, game completed
-        setCurrentPuzzle(null);
+      setCurrentPuzzle(null);
       }
     }
   };

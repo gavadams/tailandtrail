@@ -46,7 +46,7 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { currentSession, error, setError } = useGameStore();
-  const { initialize, isAppReady, isLoading, error: contentError } = useContentStore();
+  const { initialize } = useContentStore();
 
   useEffect(() => {
     // Check for existing admin session
@@ -76,18 +76,6 @@ function App() {
       loadGameData(currentSession);
     }
   }, [currentSession]);
-
-  // Show loading state while settings are loading
-  if (isLoading || !isAppReady) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <p className="text-yellow-200 text-lg">Loading your adventure...</p>
-        </div>
-      </div>
-    );
-  }
 
   const loadGameData = async (session: any) => {
     try {

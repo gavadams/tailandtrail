@@ -249,10 +249,10 @@ export const PuzzleDisplay: React.FC<PuzzleDisplayProps> = ({ onPuzzleComplete }
       
       // Update current puzzle in session (skip in test mode)
       if (!isTestMode && currentSession) {
-        supabase
-          .from('player_sessions')
-          .update({ current_puzzle_id: nextPuzzle.id })
-          .eq('id', currentSession.id);
+      supabase
+        .from('player_sessions')
+        .update({ current_puzzle_id: nextPuzzle.id })
+        .eq('id', currentSession.id);
       }
     }
   };
