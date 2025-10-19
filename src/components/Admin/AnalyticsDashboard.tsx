@@ -135,6 +135,9 @@ export const AnalyticsDashboard: React.FC = () => {
     
     setIsLoading(true);
     try {
+      console.log('Loading analytics for game:', selectedGameId);
+      console.log('Date range:', dateRange);
+      
       // Use the new analytics function to get real-time data
       const { data: analyticsData, error } = await supabase
         .rpc('get_game_analytics', {
@@ -142,6 +145,9 @@ export const AnalyticsDashboard: React.FC = () => {
           start_date: dateRange.start,
           end_date: dateRange.end
         });
+
+      console.log('Analytics data:', analyticsData);
+      console.log('Analytics error:', error);
 
       if (error) {
         console.error('Analytics function error:', error);
