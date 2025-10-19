@@ -97,9 +97,25 @@ export const PlayerGame: React.FC = () => {
           puzzleToShow = puzzles.find(p => !currentSession.completed_puzzles.includes(p.id));
         }
         
-        // If all puzzles are completed, keep the last puzzle for completion screen
+        // If all puzzles are completed, check for final splash screens first
         if (!puzzleToShow && currentSession.completed_puzzles.length === puzzles.length && puzzles.length > 0) {
-          puzzleToShow = puzzles[puzzles.length - 1];
+          // Check for final splash screens before showing completion screen
+          const finalSplashes = splashScreens
+            .filter(s => s.puzzle_id === 'END')
+            .sort((a, b) => a.sequence_order - b.sequence_order);
+          
+          const viewedSplashes = currentSession.session_data?.viewedSplashes || [];
+          const unviewedFinalSplashes = finalSplashes.filter(s => !viewedSplashes.includes(s.id));
+          
+          if (unviewedFinalSplashes.length > 0) {
+            // Show final splash screens first
+            setSplashQueue(unviewedFinalSplashes);
+            setCurrentSplash(unviewedFinalSplashes[0]);
+            setShowSplash(true);
+          } else {
+            // No final splash screens, show completion screen
+            puzzleToShow = puzzles[puzzles.length - 1];
+          }
         }
         
         setCurrentPuzzle(puzzleToShow || null);
@@ -157,6 +173,19 @@ export const PlayerGame: React.FC = () => {
             pendingSplashes = unviewedPuzzleSplashes;
           }
         }
+        
+        // If no puzzle-specific splashes, check for final splash screens
+        if (pendingSplashes.length === 0) {
+          const finalSplashes = splashScreens
+            .filter(s => s.puzzle_id === 'END')
+            .sort((a, b) => a.sequence_order - b.sequence_order);
+          
+          const unviewedFinalSplashes = finalSplashes.filter(s => !testModeViewedSplashes.includes(s.id));
+          
+          if (unviewedFinalSplashes.length > 0) {
+            pendingSplashes = unviewedFinalSplashes;
+          }
+        }
       }
     } else {
       // Normal player mode - only show unviewed splash screens
@@ -182,6 +211,17 @@ export const PlayerGame: React.FC = () => {
           
           if (unviewedPuzzleSplashes.length > 0) {
             pendingSplashes = unviewedPuzzleSplashes;
+          }
+        } else {
+          // All puzzles completed - check for final splash screens (puzzle_id = 'END')
+          const finalSplashes = splashScreens
+            .filter(s => s.puzzle_id === 'END')
+            .sort((a, b) => a.sequence_order - b.sequence_order);
+          
+          const unviewedFinalSplashes = finalSplashes.filter(s => !viewedSplashes.includes(s.id));
+          
+          if (unviewedFinalSplashes.length > 0) {
+            pendingSplashes = unviewedFinalSplashes;
           }
         }
       }
@@ -235,8 +275,12 @@ export const PlayerGame: React.FC = () => {
       setCurrentSplash(null);
       setSplashQueue([]);
       
-      // In test mode, make sure we have a puzzle to show
-      if (isTestMode && !currentPuzzle && puzzles.length > 0) {
+      // Check if we were showing final splash screens and all puzzles are completed
+      if (currentSession && currentSession.completed_puzzles.length === puzzles.length && puzzles.length > 0) {
+        // Show completion screen (last puzzle)
+        setCurrentPuzzle(puzzles[puzzles.length - 1]);
+      } else if (isTestMode && !currentPuzzle && puzzles.length > 0) {
+        // In test mode, make sure we have a puzzle to show
         setCurrentPuzzle(puzzles[0]);
       }
     }
@@ -267,8 +311,22 @@ export const PlayerGame: React.FC = () => {
         setCurrentPuzzle(nextPuzzle);
       }
     } else {
-      // No more puzzles, game completed
-      setCurrentPuzzle(null);
+      // No more puzzles - check for final splash screens before completion
+      const finalSplashes = splashScreens
+        .filter(s => s.puzzle_id === 'END')
+        .sort((a, b) => a.sequence_order - b.sequence_order);
+      
+      const unviewedFinalSplashes = finalSplashes.filter(s => !testModeViewedSplashes.includes(s.id));
+      
+      if (unviewedFinalSplashes.length > 0) {
+        // Show final splash screens first
+        setSplashQueue(unviewedFinalSplashes);
+        setCurrentSplash(unviewedFinalSplashes[0]);
+        setShowSplash(true);
+      } else {
+        // No final splash screens, game completed
+        setCurrentPuzzle(null);
+      }
     }
   };
 

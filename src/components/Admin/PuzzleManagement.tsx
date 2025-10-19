@@ -1140,7 +1140,7 @@ export const PuzzleManagement: React.FC = () => {
               ))}
               
               {/* Splash screens after last puzzle */}
-              {renderSplashSection('END', 'Splashscreens')}
+              {renderSplashSection('END', 'Final Splash Screens (After Last Puzzle)')}
             </div>
           ) : (
             <div className="text-center py-8">
