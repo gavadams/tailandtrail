@@ -16,21 +16,18 @@ import {
   PointElement,
   LineElement,
 } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { 
   BarChart3, 
   Users, 
   Clock, 
   Target, 
-  TrendingUp, 
   Download,
-  Calendar,
-  Filter,
   RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { getUserPrivileges } from '../../utils/permissions';
-import type { Game, Puzzle, AdminUser } from '../../types';
+import type { Game, AdminUser } from '../../types';
 
 // Register Chart.js components
 ChartJS.register(
@@ -138,37 +135,48 @@ export const AnalyticsDashboard: React.FC = () => {
     
     setIsLoading(true);
     try {
-      // Load player behavior analytics
-      const { data: hintData } = await supabase
-        .from('puzzle_interactions')
-        .select('hint_index, hint_text')
-        .eq('action_type', 'hint_revealed')
-        .gte('created_at', dateRange.start)
-        .lte('created_at', dateRange.end + 'T23:59:59');
+      // Use the new analytics function to get real-time data
+      const { data: analyticsData, error } = await supabase
+        .rpc('get_game_analytics', {
+          game_uuid: selectedGameId,
+          start_date: dateRange.start,
+          end_date: dateRange.end
+        });
 
-      // Load puzzle performance data
-      const { data: puzzleData } = await supabase
-        .from('daily_analytics')
-        .select('*')
-        .eq('game_id', selectedGameId)
-        .gte('date', dateRange.start)
-        .lte('date', dateRange.end);
+      if (error) {
+        console.error('Analytics function error:', error);
+        throw error;
+      }
 
-      // Load puzzle details
+      // Load puzzle details for titles
       const { data: puzzles } = await supabase
         .from('puzzles')
         .select('id, title')
         .eq('game_id', selectedGameId);
 
-      // Process hint usage data
+      // Process the analytics data
+      const puzzlePerformance = analyticsData?.map((puzzle: any) => ({
+        puzzleId: puzzle.puzzle_id,
+        puzzleTitle: puzzle.puzzle_title,
+        successRate: Number(puzzle.success_rate) || 0,
+        averageSolveTime: Number(puzzle.avg_solve_time) || 0,
+        totalAttempts: Number(puzzle.total_attempts) || 0,
+        dropOffPoints: [] // Will be populated from hint_usage if needed
+      })) || [];
+
+      // Process hint usage from the analytics data
       const hintUsageMap = new Map<number, number>();
-      hintData?.forEach(interaction => {
-        if (interaction.hint_index !== null) {
-          hintUsageMap.set(interaction.hint_index, (hintUsageMap.get(interaction.hint_index) || 0) + 1);
+      analyticsData?.forEach((puzzle: any) => {
+        if (puzzle.hint_usage && typeof puzzle.hint_usage === 'object') {
+          Object.entries(puzzle.hint_usage).forEach(([hintIndex, count]) => {
+            const index = parseInt(hintIndex);
+            const currentCount = hintUsageMap.get(index) || 0;
+            hintUsageMap.set(index, currentCount + Number(count));
+          });
         }
       });
 
-      const totalHints = Array.from(hintUsageMap.values()).reduce((sum, count) => sum + count, 0);
+      const totalHints = Array.from(hintUsageMap.values()).reduce((sum: number, count: number) => sum + count, 0);
       const hintUsage = Array.from(hintUsageMap.entries())
         .map(([hintIndex, count]) => ({
           hintIndex,
@@ -177,38 +185,31 @@ export const AnalyticsDashboard: React.FC = () => {
         }))
         .sort((a, b) => a.hintIndex - b.hintIndex);
 
-      // Process puzzle performance data
-      const puzzlePerformance = puzzleData?.map(day => ({
-        puzzleId: day.puzzle_id,
-        puzzleTitle: puzzles?.find(p => p.id === day.puzzle_id)?.title || 'Unknown Puzzle',
-        successRate: day.success_rate,
-        averageSolveTime: day.average_solve_time,
-        totalAttempts: day.total_attempts,
-        dropOffPoints: day.drop_off_at_hint ? Object.entries(day.drop_off_at_hint).map(([level, count]) => ({
-          hintLevel: parseInt(level),
-          count: count as number
-        })) : []
-      })) || [];
-
       // Calculate overall stats
+      const totalPlayers = analyticsData?.reduce((sum: number, puzzle: any) => sum + Number(puzzle.total_players), 0) || 0;
+      const avgSolveTime = analyticsData?.length > 0 
+        ? analyticsData.reduce((sum: number, puzzle: any) => sum + Number(puzzle.avg_solve_time), 0) / analyticsData.length 
+        : 0;
+
       const overallStats = {
         totalGames: games.length,
         totalPuzzles: puzzles?.length || 0,
-        totalSessions: puzzleData?.reduce((sum, day) => sum + day.unique_players, 0) || 0,
-        averageSessionDuration: puzzleData?.reduce((sum, day) => sum + day.average_solve_time, 0) / (puzzleData?.length || 1) || 0
+        totalSessions: totalPlayers,
+        averageSessionDuration: avgSolveTime
       };
 
       setAnalyticsData({
         playerBehavior: {
           hintUsage,
-          averageSolveTime: puzzleData?.reduce((sum, day) => sum + day.average_solve_time, 0) / (puzzleData?.length || 1) || 0,
-          totalPlayers: puzzleData?.reduce((sum, day) => sum + day.unique_players, 0) || 0,
-          activePlayers: puzzleData?.filter(day => day.unique_players > 0).length || 0
+          averageSolveTime: avgSolveTime,
+          totalPlayers,
+          activePlayers: analyticsData?.filter((puzzle: any) => Number(puzzle.total_players) > 0).length || 0
         },
         puzzlePerformance,
         overallStats
       });
     } catch (err) {
+      console.error('Analytics error:', err);
       setError('Failed to load analytics data');
     } finally {
       setIsLoading(false);
