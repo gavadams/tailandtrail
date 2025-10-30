@@ -266,16 +266,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               </div>
             </div>
 
-            {/* Tips */}
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-yellow-800 mb-2">Getting Started Tips</h3>
-              <ul className="space-y-2 text-sm sm:text-base text-yellow-700">
-                <li>• Create a game first, then add puzzles to it in the desired sequence</li>
-                <li>• Use progressive clues to help players when they get stuck</li>
-                <li>• Generate access codes after your game is ready for players</li>
-                <li>• Each access code is valid for 12 hours from first use</li>
-              </ul>
-            </div>
+            {/* Tips removed per request */}
           </div>
         );
     }
