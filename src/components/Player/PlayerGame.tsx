@@ -98,6 +98,24 @@ export const PlayerGame: React.FC = () => {
           user_agent: navigator.userAgent
         } as any);
 
+      // Retry to attach purchase_id shortly after if it was unavailable on first attempt
+      if (!purchaseId) {
+        setTimeout(async () => {
+          try {
+            const { data: retryData, error: retryErr } = await supabase.functions.invoke('get-purchase-email', {
+              body: { access_code_id: accessCode.id }
+            });
+            const retryPurchaseId = retryErr ? null : retryData?.purchase_id;
+            if (retryPurchaseId) {
+              await supabase
+                .from('disclaimer_acceptances')
+                .update({ purchase_id: retryPurchaseId })
+                .eq('access_code_id', accessCode.id);
+            }
+          } catch {}
+        }, 2000);
+      }
+
       setHasAcceptedDisclaimer(true);
     } catch (e) {
       console.error('Failed to record disclaimer acceptance', e);
@@ -525,11 +543,7 @@ export const PlayerGame: React.FC = () => {
               <p><strong>By proceeding, you confirm you understand and agree to these terms.</strong></p>
               <p>Now grab your first clue and begin your adventure  - the mystery awaits!</p>
             </div>
-            <div className="mt-6 flex items-center justify-between">
-              <label className="flex items-center text-sm text-gray-800">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-yellow-600 border-gray-300 rounded" checked readOnly />
-                I have read and agree to the disclaimer.
-              </label>
+            <div className="mt-6 flex items-center justify-end">
               <button
                 onClick={handleAgreeDisclaimer}
                 disabled={isAccepting}
