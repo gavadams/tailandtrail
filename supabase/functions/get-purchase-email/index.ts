@@ -32,10 +32,10 @@ serve(async (req) => {
       )
     }
 
-    // Query purchases table to get email
+    // Query purchases table to get email and id
     const { data: purchaseData, error: purchaseError } = await supabaseClient
       .from('purchases')
-      .select('email')
+      .select('id,email')
       .eq('access_code_id', access_code_id)
       .single()
 
@@ -60,9 +60,9 @@ serve(async (req) => {
       )
     }
 
-    // Return the email
+    // Return the email and purchase_id
     return new Response(
-      JSON.stringify({ email: purchaseData.email }),
+      JSON.stringify({ email: purchaseData.email, purchase_id: purchaseData.id }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

@@ -72,20 +72,16 @@ export const PlayerGame: React.FC = () => {
     if (!accessCode || !currentGame) return;
     setIsAccepting(true);
     try {
-      // Try to find purchase for this access code to capture email and purchase_id
+      // Use existing edge function to fetch purchaser email and id (bypasses RLS)
       let purchaserEmail: string | null = null;
       let purchaseId: string | null = null;
       try {
-        const { data: purchase } = await supabase
-          .from('purchases')
-          .select('id,email')
-          .eq('access_code_id', accessCode.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (purchase) {
-          purchaserEmail = (purchase as any).email;
-          purchaseId = (purchase as any).id;
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('get-purchase-email', {
+          body: { access_code_id: accessCode.id }
+        });
+        if (!emailError && emailData) {
+          purchaserEmail = emailData.email || null;
+          purchaseId = emailData.purchase_id || null;
         }
       } catch {}
 
@@ -95,7 +91,7 @@ export const PlayerGame: React.FC = () => {
           access_code_id: accessCode.id,
           purchase_id: purchaseId,
           game_id: currentGame.id,
-          email: purchaserEmail || '',
+          email: purchaserEmail || currentSession?.player_email || '',
           agreed: true,
           disclaimer_version: 'v1',
           ip_address: null,
@@ -495,8 +491,8 @@ export const PlayerGame: React.FC = () => {
     );
   }
 
-  // Show splash screen if active
-  if (showSplash && currentSplash) {
+  // Show splash screen if active and disclaimer accepted (or in test mode)
+  if (showSplash && currentSplash && (hasAcceptedDisclaimer || isTestMode)) {
     const isLastInSequence = splashQueue.length <= 1;
     return <SplashScreen splashScreen={currentSplash} onContinue={handleSplashContinue} isLastInSequence={isLastInSequence} />;
   }
