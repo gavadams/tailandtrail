@@ -16,6 +16,9 @@ import { SplashScreen as SplashScreenType } from '../../types';
 
 export const PlayerGame: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [checkingDisclaimer, setCheckingDisclaimer] = useState(true);
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
   const [currentSplash, setCurrentSplash] = useState<SplashScreenType | null>(null);
   const [showSplash, setShowSplash] = useState(false);
   const [splashScreens, setSplashScreens] = useState<SplashScreenType[]>([]);
@@ -40,6 +43,73 @@ export const PlayerGame: React.FC = () => {
       loadSplashScreens();
     }
   }, [currentGame]);
+
+  // Check disclaimer acceptance when session/access code available
+  useEffect(() => {
+    const checkAcceptance = async () => {
+      if (!accessCode || !currentGame) {
+        setCheckingDisclaimer(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('disclaimer_acceptances')
+          .select('id')
+          .eq('access_code_id', accessCode.id)
+          .maybeSingle();
+        if (error) throw error;
+        setHasAcceptedDisclaimer(!!data);
+      } catch (e) {
+        console.warn('Failed to check disclaimer acceptance', e);
+      } finally {
+        setCheckingDisclaimer(false);
+      }
+    };
+    checkAcceptance();
+  }, [accessCode, currentGame]);
+
+  const handleAgreeDisclaimer = async () => {
+    if (!accessCode || !currentGame) return;
+    setIsAccepting(true);
+    try {
+      // Try to find purchase for this access code to capture email and purchase_id
+      let purchaserEmail: string | null = null;
+      let purchaseId: string | null = null;
+      try {
+        const { data: purchase } = await supabase
+          .from('purchases')
+          .select('id,email')
+          .eq('access_code_id', accessCode.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (purchase) {
+          purchaserEmail = (purchase as any).email;
+          purchaseId = (purchase as any).id;
+        }
+      } catch {}
+
+      await supabase
+        .from('disclaimer_acceptances')
+        .insert({
+          access_code_id: accessCode.id,
+          purchase_id: purchaseId,
+          game_id: currentGame.id,
+          email: purchaserEmail || '',
+          agreed: true,
+          disclaimer_version: 'v1',
+          ip_address: null,
+          user_agent: navigator.userAgent
+        } as any);
+
+      setHasAcceptedDisclaimer(true);
+    } catch (e) {
+      console.error('Failed to record disclaimer acceptance', e);
+      setError('Failed to record disclaimer acceptance. Please try again.');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
 
   const loadSplashScreens = async () => {
     if (!currentGame) return;
@@ -414,7 +484,7 @@ export const PlayerGame: React.FC = () => {
   const isGameCompleted = currentSession ? 
     currentSession.completed_puzzles.length === puzzles.length && puzzles.length > 0 : false;
 
-  if (isLoading) {
+  if (isLoading || checkingDisclaimer) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -436,6 +506,46 @@ export const PlayerGame: React.FC = () => {
       <Header onLogout={handleLogout} hideBranding={true} />
       <ProgressIndicator />
       
+      {/* Disclaimer gate */}
+      {!hasAcceptedDisclaimer && !isTestMode && (
+        <div className="fixed inset-0 z-40 bg-black/70 flex items-center justify-center px-4">
+          <div className="bg-white max-w-2xl w-full rounded-xl shadow-2xl p-6 overflow-y-auto max-h-[90vh] border">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">⚠️ Tale & Trail Disclaimer</h2>
+            <p className="text-gray-700 mb-4">Please read before starting your adventure</p>
+            <div className="prose max-w-none text-gray-800 text-sm">
+              <p>By taking part in this Tale & Trail game, you agree to the following terms and conditions:</p>
+              <h3>Independent Experience</h3>
+              <p>Tale & Trail is an independent entertainment experience. We are not affiliated with, endorsed by, or sponsored by any of the venues, pubs, or establishments featured in the game.</p>
+              <h3>Venue Access</h3>
+              <p>Entry to venues is at the sole discretion of each establishment. If you are denied entry, cannot gain access, or a venue is closed, simply move on to a nearby or alternative location and continue your adventure from there. The game is designed to be flexible and fun wherever you play.</p>
+              <h3>Player Responsibility</h3>
+              <p>Participants are entirely responsible for their own actions, behaviour, and safety while taking part in the game. Please drink responsibly, respect staff and patrons, and follow all local laws and venue policies.</p>
+              <h3>Health & Safety</h3>
+              <p>Take care when navigating between venues — be aware of your surroundings, traffic, and weather conditions. Participation is at your own risk.</p>
+              <h3>Content & Gameplay</h3>
+              <p>Clues, storylines, and puzzles are provided for entertainment purposes only. Any resemblance to real persons, businesses, or events is purely coincidental.</p>
+              <h3>Liability</h3>
+              <p>Tale & Trail and its creators accept no responsibility or liability for injury, loss, damage, or inconvenience arising from participation in the game.</p>
+              <p><strong>By proceeding, you confirm you understand and agree to these terms.</strong></p>
+              <p>Now grab your first clue and begin your adventure  - the mystery awaits!</p>
+            </div>
+            <div className="mt-6 flex items-center justify-between">
+              <label className="flex items-center text-sm text-gray-800">
+                <input type="checkbox" className="mr-2 h-4 w-4 text-yellow-600 border-gray-300 rounded" checked readOnly />
+                I have read and agree to the disclaimer.
+              </label>
+              <button
+                onClick={handleAgreeDisclaimer}
+                disabled={isAccepting}
+                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white font-bold px-5 py-2 rounded-lg"
+              >
+                {isAccepting ? 'Please wait…' : 'I Agree, Start Game'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="py-8">
         {isGameCompleted ? (
           // Game Completion Screen
@@ -492,7 +602,11 @@ export const PlayerGame: React.FC = () => {
           </div>
         ) : (
           // Active Game Display
-          <PuzzleDisplay onPuzzleComplete={isTestMode ? handleNextPuzzle : undefined} />
+          hasAcceptedDisclaimer || isTestMode ? (
+            <PuzzleDisplay onPuzzleComplete={isTestMode ? handleNextPuzzle : undefined} />
+          ) : (
+            <div className="max-w-3xl mx-auto p-6 text-center text-yellow-200">Please accept the disclaimer to begin.</div>
+          )
         )}
       </div>
       

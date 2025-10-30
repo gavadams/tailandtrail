@@ -32,7 +32,8 @@ export const PurchaseManagement: React.FC = () => {
         .select(`
           *,
           games (title),
-          access_codes (code)
+          access_codes (code),
+          disclaimer_acceptances:access_codes(disclaimer_acceptances(agreed_at))
         `)
         .order('created_at', { ascending: false });
 
@@ -179,6 +180,9 @@ export const PurchaseManagement: React.FC = () => {
                   Game
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Disclaimer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -205,6 +209,20 @@ export const PurchaseManagement: React.FC = () => {
                     <span className="text-sm text-gray-900">
                       {(purchase as any).games?.title || 'Unknown Game'}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {(() => {
+                      const nested = (purchase as any).disclaimer_acceptances?.[0]?.disclaimer_acceptances?.[0]?.agreed_at;
+                      return nested ? (
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          Accepted {new Date(nested).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          Not accepted
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900">

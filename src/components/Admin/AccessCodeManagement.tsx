@@ -86,7 +86,8 @@ export const AccessCodeManagement: React.FC = () => {
         .select(`
           *,
           games (title),
-          purchases (email)
+          purchases (email),
+          disclaimer_acceptances (agreed_at)
         `)
         .eq('game_id', gameId)
         .order('created_at', { ascending: false });
@@ -323,6 +324,9 @@ export const AccessCodeManagement: React.FC = () => {
                     Purchaser Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Disclaimer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -343,6 +347,7 @@ export const AccessCodeManagement: React.FC = () => {
                 {accessCodes.map((code) => {
                   const { status, color } = getCodeStatus(code);
                   const purchaserEmail = ((code as any).purchases && (code as any).purchases[0]?.email) || '';
+                  const acceptedAt = ((code as any).disclaimer_acceptances && (code as any).disclaimer_acceptances[0]?.agreed_at) || null;
                   return (
                     <tr key={code.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -362,6 +367,17 @@ export const AccessCodeManagement: React.FC = () => {
                             )}
                           </button>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {acceptedAt ? (
+                          <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Accepted {new Date(acceptedAt).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                            Not accepted
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {purchaserEmail || '-'}

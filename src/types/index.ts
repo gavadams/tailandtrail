@@ -137,6 +137,19 @@ export interface NewsletterSubscriber {
   ip_address?: string | null;
 }
 
+export interface DisclaimerAcceptance {
+  id: string;
+  access_code_id: string;
+  purchase_id?: string | null;
+  game_id: string;
+  email: string;
+  agreed: boolean;
+  disclaimer_version: string;
+  agreed_at: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
