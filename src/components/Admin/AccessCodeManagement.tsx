@@ -85,7 +85,8 @@ export const AccessCodeManagement: React.FC = () => {
         .from('access_codes')
         .select(`
           *,
-          games (title)
+          games (title),
+          purchases (email)
         `)
         .eq('game_id', gameId)
         .order('created_at', { ascending: false });
@@ -319,6 +320,9 @@ export const AccessCodeManagement: React.FC = () => {
                     Code
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Purchaser Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -338,6 +342,7 @@ export const AccessCodeManagement: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {accessCodes.map((code) => {
                   const { status, color } = getCodeStatus(code);
+                  const purchaserEmail = ((code as any).purchases && (code as any).purchases[0]?.email) || '';
                   return (
                     <tr key={code.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -357,6 +362,9 @@ export const AccessCodeManagement: React.FC = () => {
                             )}
                           </button>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {purchaserEmail || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
@@ -402,6 +410,7 @@ export const AccessCodeManagement: React.FC = () => {
           <div className="md:hidden space-y-4 p-4">
             {accessCodes.map((code) => {
               const { status, color } = getCodeStatus(code);
+              const purchaserEmail = ((code as any).purchases && (code as any).purchases[0]?.email) || '';
               return (
                 <div key={code.id} className="bg-white rounded-lg shadow border p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -422,6 +431,11 @@ export const AccessCodeManagement: React.FC = () => {
                           )}
                         </button>
                       </div>
+                      {purchaserEmail && (
+                        <div className="text-sm text-gray-900">
+                          <span className="font-medium">Purchaser:</span> {purchaserEmail}
+                        </div>
+                      )}
                       <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
                         color === 'gray' ? 'bg-gray-100 text-gray-800' :
                         color === 'blue' ? 'bg-blue-100 text-blue-800' :
