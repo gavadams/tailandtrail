@@ -99,5 +99,6 @@ temp/
 /public/robots.txt
 
 # migrations
+database_migrations
 supabase/migrations/
 *.sql

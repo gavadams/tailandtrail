@@ -25,6 +25,9 @@ export interface Game {
   is_active: boolean;
   game_tested: boolean;
   content_tested: boolean;
+  area?: string;
+  walking_distance_miles?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
   created_at: string;
   updated_at: string;
 }

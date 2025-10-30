@@ -19,6 +19,9 @@ interface GameForm {
   is_active: boolean;
   game_tested: boolean;
   content_tested: boolean;
+  area?: string;
+  walking_distance_miles?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export const GameManagement: React.FC = () => {
@@ -121,6 +124,9 @@ export const GameManagement: React.FC = () => {
             is_active: data.is_active,
             game_tested: data.game_tested,
             content_tested: data.content_tested,
+            area: data.area ?? null,
+            walking_distance_miles: data.walking_distance_miles ?? null,
+            difficulty: data.difficulty ?? null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingGame.id);
@@ -136,6 +142,9 @@ export const GameManagement: React.FC = () => {
           is_active: data.is_active,
           game_tested: data.game_tested,
           content_tested: data.content_tested,
+          area: data.area ?? null,
+          walking_distance_miles: data.walking_distance_miles ?? null,
+          difficulty: data.difficulty ?? null,
           previous_title: editingGame.title,
           previous_theme: editingGame.theme
         });
@@ -150,7 +159,10 @@ export const GameManagement: React.FC = () => {
             city_id: data.city_id,
             is_active: data.is_active,
             game_tested: data.game_tested,
-            content_tested: data.content_tested
+            content_tested: data.content_tested,
+            area: data.area ?? null,
+            walking_distance_miles: data.walking_distance_miles ?? null,
+            difficulty: data.difficulty ?? null
           })
           .select()
           .single();
@@ -165,7 +177,10 @@ export const GameManagement: React.FC = () => {
           city_id: data.city_id,
           is_active: data.is_active,
           game_tested: data.game_tested,
-          content_tested: data.content_tested
+          content_tested: data.content_tested,
+          area: data.area ?? null,
+          walking_distance_miles: data.walking_distance_miles ?? null,
+          difficulty: data.difficulty ?? null
         });
       }
 
@@ -188,6 +203,9 @@ export const GameManagement: React.FC = () => {
     setValue('is_active', game.is_active);
     setValue('game_tested', game.game_tested || false);
     setValue('content_tested', game.content_tested || false);
+    setValue('area', (game as any).area || '');
+    setValue('walking_distance_miles', (game as any).walking_distance_miles || undefined);
+    setValue('difficulty', (game as any).difficulty || undefined);
     setShowForm(true);
   };
 
@@ -485,6 +503,54 @@ export const GameManagement: React.FC = () => {
               )}
             </div>
 
+            {/* Additional Game Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Area
+                </label>
+                <input
+                  {...register('area')}
+                  type="text"
+                  placeholder="e.g., City Centre, Old Town"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Walking Distance (miles)
+                </label>
+                <input
+                  {...register('walking_distance_miles', {
+                    valueAsNumber: true,
+                    min: { value: 0, message: 'Must be 0 or greater' }
+                  })}
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  placeholder="e.g., 2.5"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+                {errors.walking_distance_miles && (
+                  <p className="text-red-600 text-sm mt-1">{String(errors.walking_distance_miles.message)}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Difficulty
+                </label>
+                <select
+                  {...register('difficulty')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Select difficulty...</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
             <div>
               <label className="flex items-center space-x-3">
                 <input
@@ -619,6 +685,22 @@ export const GameManagement: React.FC = () => {
                   }`}>
                     {game.is_active ? 'Active' : 'Inactive'}
                   </span>
+                {/* New badges */}
+                {(game as any).difficulty && (
+                  <span className="inline-block bg-amber-600 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
+                    {(game as any).difficulty}
+                  </span>
+                )}
+                {(game as any).walking_distance_miles !== null && (game as any).walking_distance_miles !== undefined && (
+                  <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                    {(game as any).walking_distance_miles} miles
+                  </span>
+                )}
+                {(game as any).area && (
+                  <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    {(game as any).area}
+                  </span>
+                )}
                   
                   {/* Game Testing Status Icons */}
                   <div className="flex flex-col space-y-1">

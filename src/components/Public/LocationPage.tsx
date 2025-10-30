@@ -237,6 +237,23 @@ export const LocationPage: React.FC = () => {
                   {games.map((game) => (
                     <div key={game.id} className="bg-gray-800 rounded-lg p-6 shadow-lg border border-yellow-600">
                       <h3 className="text-xl font-bold text-yellow-200 mb-3">{game.title}</h3>
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {(game as any).difficulty && (
+                          <span className="inline-block bg-amber-600 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
+                            {(game as any).difficulty}
+                          </span>
+                        )}
+                        {(game as any).walking_distance_miles !== null && (game as any).walking_distance_miles !== undefined && (
+                          <span className="inline-block bg-gray-700 text-yellow-200 text-xs px-2 py-1 rounded-full">
+                            {(game as any).walking_distance_miles} miles
+                          </span>
+                        )}
+                        {(game as any).area && (
+                          <span className="inline-block bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded-full">
+                            {(game as any).area}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-300 mb-4 line-clamp-3">{game.description}</p>
                       <Link
                         to="/purchase"
