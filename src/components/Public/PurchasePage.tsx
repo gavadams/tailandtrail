@@ -77,6 +77,19 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
       }
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Fallback: ensure newsletter capture post-payment as well
+        try {
+          if (opt_in_marketing && email) {
+            const { error: nlError } = await supabase
+              .from('newsletter_subscribers')
+              .insert({ email, source: 'purchase', ip_address: undefined } as any, { onConflict: 'email', ignoreDuplicates: true });
+            if (nlError) {
+              console.warn('Post-payment newsletter insert error:', nlError);
+            }
+          }
+        } catch (e) {
+          console.warn('Post-payment newsletter capture failed', e);
+        }
         // Payment successful - generate access code and create records
         await handleSuccessfulPayment(paymentIntent.id);
       } else {
@@ -379,9 +392,12 @@ export const PurchasePage: React.FC = () => {
     try {
       if (_data.opt_in_marketing && _data.email) {
         const ipAddress = undefined; // Optionally populate from server if desired
-        await supabase
+        const { error } = await supabase
           .from('newsletter_subscribers')
-          .upsert({ email: _data.email, source: 'purchase', ip_address: ipAddress } as any, { onConflict: 'email' });
+          .insert({ email: _data.email, source: 'purchase', ip_address: ipAddress } as any, { onConflict: 'email', ignoreDuplicates: true });
+        if (error) {
+          console.warn('Newsletter insert error:', error);
+        }
       }
     } catch (e) {
       console.warn('Newsletter upsert failed', e);
