@@ -129,6 +129,14 @@ export interface SiteSettings {
   updated_at: string;
 }
 
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  source?: string;
+  subscribed_at: string;
+  ip_address?: string | null;
+}
+
 export interface AdminUser {
   id: string;
   email: string;

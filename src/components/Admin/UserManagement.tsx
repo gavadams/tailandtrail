@@ -9,7 +9,7 @@ import { Plus, Edit3, Trash2, Eye, User, Clock, AlertCircle, CheckCircle, Chevro
 import { supabase } from '../../lib/supabase';
 import { logActivity, logCreate, logUpdate, logDelete } from '../../utils/activityLogger';
 import { getUserPrivileges, getRoleBadgeColor } from '../../utils/permissions';
-import type { AdminUser, UserActivity } from '../../types';
+import type { AdminUser, UserActivity, NewsletterSubscriber } from '../../types';
 
 interface UserForm {
   email: string;
@@ -28,13 +28,14 @@ interface ActivityFilters {
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [showUserForm, setShowUserForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'activities'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'activities' | 'subscribers'>('users');
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
   const [authUserIds, setAuthUserIds] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
@@ -50,6 +51,51 @@ const UserManagement: React.FC = () => {
     loadActivities();
     checkAuthUsers();
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.role === 'super_admin') {
+      loadSubscribers();
+    }
+  }, [currentUser]);
+  const loadSubscribers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('newsletter_subscribers')
+        .select('*')
+        .order('subscribed_at', { ascending: false });
+      if (error) throw error;
+      setSubscribers(data || []);
+    } catch (err) {
+      console.warn('Failed to load subscribers:', err);
+    }
+  };
+
+  const handleDeleteSubscriber = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setSubscribers(prev => prev.filter(s => s.id !== id));
+      setSuccess('Subscriber removed');
+    } catch (err) {
+      setError('Failed to remove subscriber');
+    }
+  };
+
+  const exportSubscribersCsv = () => {
+    const header = ['email','source','subscribed_at','ip_address'];
+    const rows = subscribers.map(s => [s.email, s.source || '', s.subscribed_at, s.ip_address || '']);
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'newsletter-subscribers.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const loadCurrentUser = async () => {
     try {
@@ -575,8 +621,70 @@ const UserManagement: React.FC = () => {
               Activity Logs ({activities.length})
             </button>
           )}
+          {currentUser?.role === 'super_admin' && (
+            <button
+              onClick={() => setActiveTab('subscribers')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'subscribers'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <User className="h-4 w-4 inline mr-2" />
+              Subscribers ({subscribers.length})
+            </button>
+          )}
         </nav>
       </div>
+      {/* Subscribers Tab - Super Admin only */}
+      {activeTab === 'subscribers' && currentUser?.role === 'super_admin' && (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {subscribers.length === 0 ? (
+            <div className="text-center py-12">
+              <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No subscribers found</h3>
+              <p className="text-gray-500">Newsletter opt-ins will appear here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+                <h3 className="text-base font-semibold text-gray-900">Newsletter Subscribers</h3>
+                <button onClick={exportSubscribersCsv} className="text-sm text-blue-600 hover:text-blue-700">Export CSV</button>
+              </div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {subscribers.map(s => (
+                    <tr key={s.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{s.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.source || 'purchase'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(s.subscribed_at).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{s.ip_address || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <button
+                          onClick={() => handleDeleteSubscriber(s.id)}
+                          className="text-red-600 hover:text-red-700 p-1"
+                          title="Remove subscriber"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Error/Success Messages */}
       {error && (

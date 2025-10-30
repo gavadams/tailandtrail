@@ -230,7 +230,11 @@ export const PurchasePage: React.FC = () => {
   const [showStripeForm, setShowStripeForm] = useState(false);
   const { getSetting } = useContentStore();
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PurchaseForm>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PurchaseForm>({
+    defaultValues: {
+      opt_in_marketing: true
+    }
+  });
   const watchGameId = watch('game_id');
   const watchCityId = watch('city_id');
   const watchEmail = watch('email');
@@ -359,7 +363,7 @@ export const PurchasePage: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (_data: PurchaseForm) => {
+  const handleFormSubmit = async (_data: PurchaseForm) => {
     if (!selectedCity) {
       setError('Please select a city');
       return;
@@ -371,6 +375,18 @@ export const PurchasePage: React.FC = () => {
     }
 
     setError(null);
+    // Capture newsletter subscription before payment if opted-in
+    try {
+      if (_data.opt_in_marketing && _data.email) {
+        const ipAddress = undefined; // Optionally populate from server if desired
+        await supabase
+          .from('newsletter_subscribers')
+          .upsert({ email: _data.email, source: 'purchase', ip_address: ipAddress } as any, { onConflict: 'email' });
+      }
+    } catch (e) {
+      console.warn('Newsletter upsert failed', e);
+      // Do not block checkout flow
+    }
     setShowStripeForm(true);
   };
 
