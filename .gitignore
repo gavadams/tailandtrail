@@ -98,6 +98,9 @@ temp/
 /public/sitemap.xml
 /public/robots.txt
 
+#supabase
+/supabase/
+
 # migrations
 database_migrations
 supabase/migrations/

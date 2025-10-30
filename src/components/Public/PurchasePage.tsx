@@ -436,12 +436,6 @@ export const PurchasePage: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <a
-                  href="/play"
-                  className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                >
-                  Start Playing Now
-                </a>
                 {(selectedGame as any)?.start_location_label || (selectedGame as any)?.start_location_maps_url ? (
                   <div className="rounded-xl p-5 border-2 border-green-600 bg-green-50 text-left shadow-sm">
                     <div className="flex items-center mb-2">
@@ -463,6 +457,12 @@ export const PurchasePage: React.FC = () => {
                     )}
                   </div>
                 ) : null}
+                <a
+                  href="/play"
+                  className="block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Start Playing Now
+                </a>
                 <p className="text-green-700 text-sm text-center">
                   Save this code! You can also find it in your email receipt.
                 </p>

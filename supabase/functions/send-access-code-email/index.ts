@@ -71,10 +71,11 @@ serve(async (req) => {
         <p>Start playing here: <a href="${siteUrl}/play">${siteUrl}/play</a></p>
         <p><small>Valid for 12 hours from first use.</small></p>
         ${startLocationLabel || startLocationUrl ? `
-          <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-          <h3 style="margin:0 0 8px 0">Starting location</h3>
-          ${startLocationLabel ? `<p style=\"margin:4px 0\">${startLocationLabel}</p>` : ''}
-          ${startLocationUrl ? `<p style=\"margin:4px 0\"><a href=\"${startLocationUrl}\">Open in Google Maps</a></p>` : ''}
+          <div style="border:2px solid #10b981;background:#ecfdf5;border-radius:12px;padding:16px;margin:20px 0">
+            <div style="font-weight:800;color:#065f46;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Starting location</div>
+            ${startLocationLabel ? `<div style=\"color:#064e3b;font-weight:600;margin:4px 0\">${startLocationLabel}</div>` : ''}
+            ${startLocationUrl ? `<a href=\"${startLocationUrl}\" style=\"display:inline-block;margin-top:8px;background:#10b981;color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none\">Open in Google Maps</a>` : ''}
+          </div>
         ` : ''}
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
         <p style="color:#666;font-size:12px">If you didn’t make this purchase, please contact support.</p>
