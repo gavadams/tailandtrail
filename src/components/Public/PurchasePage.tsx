@@ -29,6 +29,7 @@ interface StripeCheckoutFormProps {
   setAccessCode: (code: string) => void;
   setError: (error: string | null) => void;
   setIsProcessing: (processing: boolean) => void;
+  isProcessing: boolean;
 }
 
 const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
@@ -217,11 +218,20 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
 
           <button
             type="submit"
-            disabled={!stripe || !elements}
+            disabled={!stripe || !elements || isProcessing}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            <CreditCard className="h-5 w-5" />
-            <span>Complete Purchase</span>
+            {isProcessing ? (
+              <>
+                <Loader className="h-5 w-5 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-5 w-5" />
+                <span>Complete Purchase</span>
+              </>
+            )}
           </button>
         </>
       )}
@@ -645,6 +655,7 @@ export const PurchasePage: React.FC = () => {
                     setAccessCode={setAccessCode}
                     setError={setError}
                     setIsProcessing={setIsProcessing}
+                    isProcessing={isProcessing}
                   />
                 </Elements>
               </>
