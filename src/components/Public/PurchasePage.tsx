@@ -443,14 +443,17 @@ export const PurchasePage: React.FC = () => {
                   Start Playing Now
                 </a>
                 {(selectedGame as any)?.start_location_label || (selectedGame as any)?.start_location_maps_url ? (
-                  <div className="bg-white rounded-lg p-4 border text-left">
-                    <h3 className="font-bold text-green-900 mb-1">Starting location</h3>
+                  <div className="rounded-xl p-5 border-2 border-green-600 bg-green-50 text-left shadow-sm">
+                    <div className="flex items-center mb-2">
+                      <MapPin className="h-5 w-5 text-green-700 mr-2" />
+                      <h3 className="font-extrabold text-green-900 tracking-wide uppercase text-sm">Starting Location</h3>
+                    </div>
                     {(selectedGame as any)?.start_location_label && (
-                      <p className="text-green-900 mb-1">{(selectedGame as any).start_location_label}</p>
+                      <p className="text-green-900 font-semibold mb-1">{(selectedGame as any).start_location_label}</p>
                     )}
                     {(selectedGame as any)?.start_location_maps_url && (
                       <a
-                        className="text-green-700 underline"
+                        className="inline-block mt-1 text-sm font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded"
                         href={(selectedGame as any).start_location_maps_url}
                         target="_blank"
                         rel="noopener noreferrer"
