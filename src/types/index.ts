@@ -28,6 +28,8 @@ export interface Game {
   area?: string;
   walking_distance_miles?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
+  start_location_label?: string;
+  start_location_maps_url?: string;
   created_at: string;
   updated_at: string;
 }

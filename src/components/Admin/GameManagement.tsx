@@ -22,6 +22,8 @@ interface GameForm {
   area?: string;
   walking_distance_miles?: number;
   difficulty?: 'easy' | 'medium' | 'hard';
+  start_location_label?: string;
+  start_location_maps_url?: string;
 }
 
 export const GameManagement: React.FC = () => {
@@ -127,6 +129,8 @@ export const GameManagement: React.FC = () => {
             area: data.area ?? null,
             walking_distance_miles: data.walking_distance_miles ?? null,
             difficulty: data.difficulty ?? null,
+            start_location_label: data.start_location_label ?? null,
+            start_location_maps_url: data.start_location_maps_url ?? null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingGame.id);
@@ -145,6 +149,8 @@ export const GameManagement: React.FC = () => {
           area: data.area ?? null,
           walking_distance_miles: data.walking_distance_miles ?? null,
           difficulty: data.difficulty ?? null,
+          start_location_label: data.start_location_label ?? null,
+          start_location_maps_url: data.start_location_maps_url ?? null,
           previous_title: editingGame.title,
           previous_theme: editingGame.theme
         });
@@ -162,7 +168,9 @@ export const GameManagement: React.FC = () => {
             content_tested: data.content_tested,
             area: data.area ?? null,
             walking_distance_miles: data.walking_distance_miles ?? null,
-            difficulty: data.difficulty ?? null
+            difficulty: data.difficulty ?? null,
+            start_location_label: data.start_location_label ?? null,
+            start_location_maps_url: data.start_location_maps_url ?? null
           })
           .select()
           .single();
@@ -180,7 +188,9 @@ export const GameManagement: React.FC = () => {
           content_tested: data.content_tested,
           area: data.area ?? null,
           walking_distance_miles: data.walking_distance_miles ?? null,
-          difficulty: data.difficulty ?? null
+          difficulty: data.difficulty ?? null,
+          start_location_label: data.start_location_label ?? null,
+          start_location_maps_url: data.start_location_maps_url ?? null
         });
       }
 
@@ -206,6 +216,8 @@ export const GameManagement: React.FC = () => {
     setValue('area', (game as any).area || '');
     setValue('walking_distance_miles', (game as any).walking_distance_miles || undefined);
     setValue('difficulty', (game as any).difficulty || undefined);
+    setValue('start_location_label', (game as any).start_location_label || '');
+    setValue('start_location_maps_url', (game as any).start_location_maps_url || '');
     setShowForm(true);
   };
 
@@ -548,6 +560,28 @@ export const GameManagement: React.FC = () => {
                   <option value="medium">Medium</option>
                   <option value="hard">Hard</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Start Location (for post-purchase display only) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Starting Location Label</label>
+                <input
+                  {...register('start_location_label')}
+                  type="text"
+                  placeholder="e.g., Outside The Crown, NE1 1AA"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Google Maps URL</label>
+                <input
+                  {...register('start_location_maps_url')}
+                  type="url"
+                  placeholder="https://maps.google.com/..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
               </div>
             </div>
 

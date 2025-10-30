@@ -164,7 +164,9 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
             email: email,
             accessCode: code,
             gameTitle: selectedGame.title,
-            customerName: email.split('@')[0] // Extract name from email as fallback
+            customerName: email.split('@')[0],
+            startLocationLabel: (selectedGame as any).start_location_label || null,
+            startLocationUrl: (selectedGame as any).start_location_maps_url || null
           })
         });
 
@@ -440,6 +442,24 @@ export const PurchasePage: React.FC = () => {
                 >
                   Start Playing Now
                 </a>
+                {(selectedGame as any)?.start_location_label || (selectedGame as any)?.start_location_maps_url ? (
+                  <div className="bg-white rounded-lg p-4 border text-left">
+                    <h3 className="font-bold text-green-900 mb-1">Starting location</h3>
+                    {(selectedGame as any)?.start_location_label && (
+                      <p className="text-green-900 mb-1">{(selectedGame as any).start_location_label}</p>
+                    )}
+                    {(selectedGame as any)?.start_location_maps_url && (
+                      <a
+                        className="text-green-700 underline"
+                        href={(selectedGame as any).start_location_maps_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open in Google Maps
+                      </a>
+                    )}
+                  </div>
+                ) : null}
                 <p className="text-green-700 text-sm text-center">
                   Save this code! You can also find it in your email receipt.
                 </p>

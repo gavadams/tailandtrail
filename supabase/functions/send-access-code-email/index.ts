@@ -34,7 +34,7 @@ serve(async (req) => {
     }
 
     // Parse and validate payload (matches what your Purchase page sends)
-    const { email, accessCode, gameTitle, customerName } = await req.json();
+    const { email, accessCode, gameTitle, customerName, startLocationLabel, startLocationUrl } = await req.json();
 
     if (!email || !accessCode || !gameTitle) {
       return new Response(
@@ -70,6 +70,12 @@ serve(async (req) => {
         </div>
         <p>Start playing here: <a href="${siteUrl}/play">${siteUrl}/play</a></p>
         <p><small>Valid for 12 hours from first use.</small></p>
+        ${startLocationLabel || startLocationUrl ? `
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+          <h3 style="margin:0 0 8px 0">Starting location</h3>
+          ${startLocationLabel ? `<p style=\"margin:4px 0\">${startLocationLabel}</p>` : ''}
+          ${startLocationUrl ? `<p style=\"margin:4px 0\"><a href=\"${startLocationUrl}\">Open in Google Maps</a></p>` : ''}
+        ` : ''}
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
         <p style="color:#666;font-size:12px">If you didn’t make this purchase, please contact support.</p>
       </body></html>
@@ -82,7 +88,10 @@ Your access code: ${accessCode}
 
 Start playing: ${siteUrl}/play
 
-Valid for 12 hours from first use.`;
+Valid for 12 hours from first use.
+
+${startLocationLabel || startLocationUrl ? `Starting location:
+${startLocationLabel ? `${startLocationLabel}\n` : ''}${startLocationUrl ? `${startLocationUrl}\n` : ''}` : ''}`;
 
     // helper to send via Resend
     async function sendResendEmail(to: string, subject: string, html: string, text?: string) {
