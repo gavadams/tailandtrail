@@ -51,6 +51,13 @@ export const PlayerGame: React.FC = () => {
         setCheckingDisclaimer(false);
         return;
       }
+      // Fast path: respect session flag if present
+      const sessionAccepted = currentSession?.session_data?.disclaimerAccepted === true;
+      if (sessionAccepted) {
+        setHasAcceptedDisclaimer(true);
+        setCheckingDisclaimer(false);
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from('disclaimer_acceptances')
@@ -66,7 +73,7 @@ export const PlayerGame: React.FC = () => {
       }
     };
     checkAcceptance();
-  }, [accessCode, currentGame]);
+  }, [accessCode, currentGame, currentSession]);
 
   const handleAgreeDisclaimer = async () => {
     if (!accessCode || !currentGame) return;
@@ -117,6 +124,18 @@ export const PlayerGame: React.FC = () => {
       }
 
       setHasAcceptedDisclaimer(true);
+      // Persist acceptance flag in session to avoid re-check flicker
+      if (currentSession) {
+        const updatedSessionData = {
+          ...currentSession.session_data,
+          disclaimerAccepted: true
+        };
+        await supabase
+          .from('player_sessions')
+          .update({ session_data: updatedSessionData })
+          .eq('id', currentSession.id);
+        setSession({ ...currentSession, session_data: updatedSessionData });
+      }
     } catch (e) {
       console.error('Failed to record disclaimer acceptance', e);
       setError('Failed to record disclaimer acceptance. Please try again.');
