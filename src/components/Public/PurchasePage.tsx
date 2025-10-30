@@ -47,9 +47,7 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
   const elements = useElements();
   const { getSetting } = useContentStore();
 
-  // Log Stripe objects
-  console.log('Stripe object from useStripe():', stripe);
-  console.log('Elements object from useElements():', elements);
+  // Stripe objects ready when not null
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -212,9 +210,7 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
         <>
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h3 className="font-bold text-amber-900 mb-2">Payment Details</h3>
-            <PaymentElement 
-              onReady={() => console.log('PaymentElement is ready')}
-            />
+            <PaymentElement />
           </div>
 
           <button
@@ -267,9 +263,7 @@ export const PurchasePage: React.FC = () => {
   const stripePromise = getStripe();
   const location = useLocation();
 
-  // Log Stripe publishable key and promise
-  console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-  console.log('Stripe promise:', stripePromise);
+  // Stripe configured
 
   useEffect(() => {
     loadCities();
@@ -326,15 +320,7 @@ export const PurchasePage: React.FC = () => {
         const gamePrice = getSetting('game_price', '29.99');
         const amount = Math.round(parseFloat(gamePrice) * 100); // Convert to cents
 
-        console.log('Payment initialization values:', {
-          amount,
-          gameId: selectedGame.id,
-          email: watchEmail,
-          gamePrice
-        });
-
         const { client_secret } = await createPaymentIntent(amount, selectedGame.id, watchEmail);
-        console.log('Received client_secret:', client_secret);
         setClientSecret(client_secret);
       } catch (error) {
         console.error('Failed to initialize payment:', error);
@@ -640,7 +626,6 @@ export const PurchasePage: React.FC = () => {
             {/* Stripe Payment Form */}
             {!isLoadingPayment && clientSecret && clientSecret.length > 0 && selectedGame && watchEmail && stripePromise && (
               <>
-                {console.log('Rendering Elements with clientSecret:', clientSecret)}
                 <Elements 
                   stripe={stripePromise}
                   options={{

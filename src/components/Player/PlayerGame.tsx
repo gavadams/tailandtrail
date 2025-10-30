@@ -96,7 +96,7 @@ export const PlayerGame: React.FC = () => {
         .from('disclaimer_acceptances')
         .insert({
           access_code_id: accessCode.id,
-          purchase_id: purchaseId,
+          purchase_id: purchaseId || (currentSession?.session_data as any)?.purchase_id || null,
           game_id: currentGame.id,
           email: purchaserEmail || currentSession?.player_email || '',
           agreed: true,
