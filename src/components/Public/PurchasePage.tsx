@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { CreditCard, Mail, Shield, CheckCircle, AlertCircle, Loader, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -229,13 +230,14 @@ export const PurchasePage: React.FC = () => {
   const [showStripeForm, setShowStripeForm] = useState(false);
   const { getSetting } = useContentStore();
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<PurchaseForm>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PurchaseForm>();
   const watchGameId = watch('game_id');
   const watchCityId = watch('city_id');
   const watchEmail = watch('email');
   const watchOptIn = watch('opt_in_marketing');
 
   const stripePromise = getStripe();
+  const location = useLocation();
 
   // Log Stripe publishable key and promise
   console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -259,6 +261,31 @@ export const PurchasePage: React.FC = () => {
       setSelectedGame(game || null);
     }
   }, [watchGameId, games]);
+
+  // Preselect via URL params: ?city=...&game=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cityParam = params.get('city');
+    const gameParam = params.get('game');
+
+    if (cities.length > 0 && cityParam && !watchCityId) {
+      const city = cities.find(c => c.id === cityParam);
+      if (city) {
+        setValue('city_id', city.id, { shouldValidate: true, shouldDirty: true });
+        setSelectedCity(city);
+        loadGames(city.id);
+      }
+    }
+
+    if (games.length > 0 && gameParam && !watchGameId) {
+      const game = games.find(g => g.id === gameParam);
+      if (game) {
+        setValue('game_id', game.id, { shouldValidate: true, shouldDirty: true });
+        setSelectedGame(game);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, cities, games]);
 
   useEffect(() => {
     // Create payment intent when game and email are available
@@ -602,10 +629,25 @@ export const PurchasePage: React.FC = () => {
                 <h3 className="text-2xl font-bold text-amber-100 mb-4">
                   {selectedGame.title}
                 </h3>
-                <div className="mb-4">
+                <div className="mb-4 flex flex-wrap gap-2">
                   <span className="inline-block bg-amber-600 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
                     {selectedGame.theme}
                   </span>
+                  {(selectedGame as any).difficulty && (
+                    <span className="inline-block bg-amber-500 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
+                      {(selectedGame as any).difficulty}
+                    </span>
+                  )}
+                  {(selectedGame as any).walking_distance_miles !== null && (selectedGame as any).walking_distance_miles !== undefined && (
+                    <span className="inline-block bg-amber-700 text-amber-100 text-xs px-2 py-1 rounded-full">
+                      {(selectedGame as any).walking_distance_miles} miles
+                    </span>
+                  )}
+                  {(selectedGame as any).area && (
+                    <span className="inline-block bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded-full">
+                      {(selectedGame as any).area}
+                    </span>
+                  )}
                 </div>
                 <p className="text-amber-200 mb-6">
                   {selectedGame.description}

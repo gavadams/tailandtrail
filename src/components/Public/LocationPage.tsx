@@ -256,7 +256,7 @@ export const LocationPage: React.FC = () => {
                       </div>
                       <p className="text-gray-300 mb-4 line-clamp-3">{game.description}</p>
                       <Link
-                        to="/purchase"
+                        to={`/purchase?city=${city.id}&game=${game.id}`}
                         className="bg-yellow-600 hover:bg-yellow-700 text-gray-900 font-bold px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
                       >
                         <span>Play Now</span>
