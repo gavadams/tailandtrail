@@ -665,6 +665,16 @@ export const PurchasePage: React.FC = () => {
                   <span className="inline-block bg-amber-600 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
                     {selectedGame.theme}
                   </span>
+                  {/* City derived from game.city_id */}
+                  {(() => {
+                    const cityForGame = cities.find(c => c.id === selectedGame.city_id);
+                    return cityForGame ? (
+                      <span className="inline-flex items-center gap-1 bg-amber-700/60 text-amber-100 text-xs px-2 py-1 rounded-full">
+                        <MapPin className="h-3 w-3" />
+                        {cityForGame.name}
+                      </span>
+                    ) : null;
+                  })()}
                   {(selectedGame as any).difficulty && (
                     <span className="inline-block bg-amber-500 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
                       {(selectedGame as any).difficulty}
