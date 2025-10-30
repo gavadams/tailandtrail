@@ -419,6 +419,12 @@ export const PurchasePage: React.FC = () => {
               <p className="text-green-700 mb-6">
                 Your payment has been processed and your access code has been generated.
               </p>
+
+              {/* Delivery notice */}
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 p-4 rounded-md mb-6 text-left">
+                <p className="font-semibold mb-1">Check your email for your access code</p>
+                <p className="text-sm">If you don't see it within a few minutes, please check your spam or junk folder and mark the message as not spam.</p>
+              </div>
               
               <div className="bg-green-200 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-bold text-green-900 mb-2">Your Access Code</h3>
@@ -665,6 +671,11 @@ export const PurchasePage: React.FC = () => {
                   <span className="inline-block bg-amber-600 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
                     {selectedGame.theme}
                   </span>
+                  {(selectedGame as any).difficulty && (
+                    <span className="inline-block bg-amber-500 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
+                      {(selectedGame as any).difficulty}
+                    </span>
+                  )}
                   {/* City derived from game.city_id */}
                   {(() => {
                     const cityForGame = cities.find(c => c.id === selectedGame.city_id);
@@ -675,19 +686,14 @@ export const PurchasePage: React.FC = () => {
                       </span>
                     ) : null;
                   })()}
-                  {(selectedGame as any).difficulty && (
-                    <span className="inline-block bg-amber-500 text-amber-100 text-xs px-2 py-1 rounded-full uppercase tracking-wide">
-                      {(selectedGame as any).difficulty}
+                  {(selectedGame as any).area && (
+                    <span className="inline-block bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded-full">
+                      {(selectedGame as any).area}
                     </span>
                   )}
                   {(selectedGame as any).walking_distance_miles !== null && (selectedGame as any).walking_distance_miles !== undefined && (
                     <span className="inline-block bg-amber-700 text-amber-100 text-xs px-2 py-1 rounded-full">
                       {(selectedGame as any).walking_distance_miles} miles
-                    </span>
-                  )}
-                  {(selectedGame as any).area && (
-                    <span className="inline-block bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded-full">
-                      {(selectedGame as any).area}
                     </span>
                   )}
                 </div>
