@@ -40,7 +40,8 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
   setPurchaseComplete,
   setAccessCode,
   setError,
-  setIsProcessing
+  setIsProcessing,
+  isProcessing
 }) => {
   const stripe = useStripe();
   const elements = useElements();
