@@ -102,4 +102,7 @@ supabase/migrations/
 # .md files
 *.md
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

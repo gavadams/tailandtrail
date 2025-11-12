@@ -9,6 +9,9 @@ import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle, Instagram } from '
 =======
 import { useContentStore } from '../../stores/contentStore';
 import { validateName, validateEmail, validateMessage, sanitizeText } from '../../lib/validation';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 interface ContactForm {
