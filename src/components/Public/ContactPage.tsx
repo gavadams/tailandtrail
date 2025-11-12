@@ -5,14 +5,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle, Instagram } from 'lucide-react';
-<<<<<<< Updated upstream
-=======
 import { useContentStore } from '../../stores/contentStore';
 import { validateName, validateEmail, validateMessage, sanitizeText } from '../../lib/validation';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 interface ContactForm {
   name: string;
