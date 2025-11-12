@@ -324,8 +324,6 @@ export const PurchasePage: React.FC = () => {
     }
 
     setError(null);
-<<<<<<< Updated upstream
-=======
     // Capture newsletter subscription before payment if opted-in
     try {
       if (_data.opt_in_marketing && emailValidation.sanitized) {
@@ -355,7 +353,6 @@ export const PurchasePage: React.FC = () => {
       // Don't block checkout flow for newsletter errors
       console.warn('Newsletter upsert failed', e);
     }
->>>>>>> Stashed changes
     setShowStripeForm(true);
   };
 
