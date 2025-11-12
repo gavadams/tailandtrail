@@ -5,6 +5,11 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle, Instagram } from 'lucide-react';
+<<<<<<< Updated upstream
+=======
+import { useContentStore } from '../../stores/contentStore';
+import { validateName, validateEmail, validateMessage, sanitizeText } from '../../lib/validation';
+>>>>>>> Stashed changes
 
 interface ContactForm {
   name: string;
@@ -24,20 +29,50 @@ export const ContactPage: React.FC = () => {
     setSubmitError(null);
     
     try {
+      // Validate and sanitize inputs
+      const nameValidation = validateName(data.name, 100);
+      if (!nameValidation.isValid) {
+        setSubmitError('Please enter a valid name (max 100 characters)');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const emailValidation = validateEmail(data.email);
+      if (!emailValidation.isValid) {
+        setSubmitError('Please enter a valid email address');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const subjectValidation = validateMessage(data.subject, 200);
+      if (!subjectValidation.isValid) {
+        setSubmitError('Please enter a valid subject (max 200 characters)');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const messageValidation = validateMessage(data.message, 5000);
+      if (!messageValidation.isValid) {
+        setSubmitError('Please enter a valid message (max 5000 characters)');
+        setIsSubmitting(false);
+        return;
+      }
+
       const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
       
       if (!accessKey) {
         throw new Error('Web3Forms access key not configured');
       }
 
+      // Use sanitized values
       const formData = new FormData();
       formData.append('access_key', accessKey);
-      formData.append('name', data.name);
-      formData.append('email', data.email);
-      formData.append('subject', data.subject);
-      formData.append('message', data.message);
+      formData.append('name', nameValidation.sanitized);
+      formData.append('email', emailValidation.sanitized);
+      formData.append('subject', sanitizeText(subjectValidation.sanitized, 200));
+      formData.append('message', sanitizeText(messageValidation.sanitized, 5000));
       formData.append('from_name', 'Tale and Trail Contact Form');
-      formData.append('replyto', data.email);
+      formData.append('replyto', emailValidation.sanitized);
 
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
@@ -158,7 +193,14 @@ export const ContactPage: React.FC = () => {
                     Name
                   </label>
                   <input
-                    {...register('name', { required: 'Name is required' })}
+                    {...register('name', { 
+                      required: 'Name is required',
+                      maxLength: { value: 100, message: 'Name must be less than 100 characters' },
+                      validate: (value) => {
+                        const validation = validateName(value, 100);
+                        return validation.isValid || 'Please enter a valid name';
+                      }
+                    })}
                     type="text"
                     className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                   />
@@ -192,7 +234,10 @@ export const ContactPage: React.FC = () => {
                     Subject
                   </label>
                   <input
-                    {...register('subject', { required: 'Subject is required' })}
+                    {...register('subject', { 
+                      required: 'Subject is required',
+                      maxLength: { value: 200, message: 'Subject must be less than 200 characters' }
+                    })}
                     type="text"
                     className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                   />
@@ -206,7 +251,10 @@ export const ContactPage: React.FC = () => {
                     Message
                   </label>
                   <textarea
-                    {...register('message', { required: 'Message is required' })}
+                    {...register('message', { 
+                      required: 'Message is required',
+                      maxLength: { value: 5000, message: 'Message must be less than 5000 characters' }
+                    })}
                     rows={5}
                     className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none resize-none"
                   />

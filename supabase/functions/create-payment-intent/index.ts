@@ -27,13 +27,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Request method:", req.method);
-    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
-
     // Check content type
     const contentType = req.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-      console.error("Invalid content type:", contentType);
       return new Response(JSON.stringify({
         error: "Content-Type must be application/json"
       }), {
@@ -44,10 +40,8 @@ serve(async (req) => {
 
     // Read and parse request body
     const bodyText = await req.text();
-    console.log("Received body:", bodyText);
 
     if (!bodyText || bodyText.trim() === "") {
-      console.error("Empty request body");
       return new Response(JSON.stringify({
         error: "Request body is empty"
       }), {
@@ -60,7 +54,6 @@ serve(async (req) => {
     try {
       requestData = JSON.parse(bodyText);
     } catch (parseError) {
-      console.error("JSON parse error:", parseError);
       return new Response(JSON.stringify({
         error: "Invalid JSON in request body"
       }), {
@@ -69,13 +62,10 @@ serve(async (req) => {
       });
     }
 
-    console.log("Parsed request data:", requestData);
-
     // Extract required fields
     const { amount, game_id, email, currency = "usd" } = requestData;
 
     if (!amount || !game_id || !email) {
-      console.error("Missing required fields:", { amount, game_id, email });
       return new Response(JSON.stringify({
         error: "Missing required fields: amount, game_id, and email are required"
       }), {
@@ -86,7 +76,6 @@ serve(async (req) => {
 
     // Validate amount is a positive number
     if (typeof amount !== "number" || amount <= 0) {
-      console.error("Invalid amount:", amount);
       return new Response(JSON.stringify({
         error: "Amount must be a positive number"
       }), {
@@ -95,7 +84,31 @@ serve(async (req) => {
       });
     }
 
-    console.log("Creating payment intent with:", { amount, currency, game_id, email });
+    // Validate email format
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({
+        error: "Invalid email address"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Validate game_id is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(game_id)) {
+      return new Response(JSON.stringify({
+        error: "Invalid game ID format"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // TODO: Add authorization check - verify game exists and is active
+    // This would require Supabase client to check game status
+    // For now, we'll rely on RLS policies and Stripe webhooks for validation
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -110,8 +123,6 @@ serve(async (req) => {
       }
     });
 
-    console.log("Payment intent created successfully:", paymentIntent.id);
-
     return new Response(JSON.stringify({
       client_secret: paymentIntent.client_secret
     }), {
@@ -120,9 +131,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    // Don't expose internal error details to client
     return new Response(JSON.stringify({
-      error: error.message || "Internal server error"
+      error: "Internal server error"
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

@@ -23,8 +23,6 @@ export const createPaymentIntent = async (amount: number, gameId: string, email:
     currency: 'GBP'
   });
   
-  console.log("Sending request body:", requestBody);
-  
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/create-payment-intent`, {
       method: 'POST',
@@ -33,12 +31,7 @@ export const createPaymentIntent = async (amount: number, gameId: string, email:
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: requestBody,
-    }
-    )
-
-    console.log('Response received:', response);
-    console.log('Response status:', response.status);
-    console.log('Response ok:', response.ok);
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -46,7 +39,6 @@ export const createPaymentIntent = async (amount: number, gameId: string, email:
     }
 
     const result = await response.json();
-    console.log('Response JSON:', result);
     return result;
   } catch (error) {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {

@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { Game } from '../../types';
 import { useContentStore } from '../../stores/contentStore';
 import { getStripe, createPaymentIntent } from '../../lib/stripe';
+import { validateEmail, validateUUID, sanitizeText } from '../../lib/validation';
 
 interface PurchaseForm {
   email: string;
@@ -309,7 +310,52 @@ export const PurchasePage: React.FC = () => {
       return;
     }
 
+    // Validate and sanitize email
+    const emailValidation = validateEmail(_data.email);
+    if (!emailValidation.isValid) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate UUIDs
+    if (!validateUUID(_data.city_id) || !validateUUID(_data.game_id)) {
+      setError('Invalid selection. Please refresh and try again.');
+      return;
+    }
+
     setError(null);
+<<<<<<< Updated upstream
+=======
+    // Capture newsletter subscription before payment if opted-in
+    try {
+      if (_data.opt_in_marketing && emailValidation.sanitized) {
+        const ipAddress = undefined; // Optionally populate from server if desired
+        const { error } = await supabase
+          .from('newsletter_subscribers')
+          .insert({ 
+            email: emailValidation.sanitized, 
+            source: 'purchase', 
+            ip_address: ipAddress 
+          } as any, { 
+            onConflict: 'email', 
+            ignoreDuplicates: true 
+          });
+        if (error) {
+          // Handle 409 conflict gracefully (email already subscribed)
+          if (error.code === '23505') {
+            // Duplicate key - email already exists, this is fine
+            // Don't show error to user as it's not a problem
+          } else {
+            // Other errors - log but don't block checkout
+            console.warn('Newsletter insert error:', error);
+          }
+        }
+      }
+    } catch (e) {
+      // Don't block checkout flow for newsletter errors
+      console.warn('Newsletter upsert failed', e);
+    }
+>>>>>>> Stashed changes
     setShowStripeForm(true);
   };
 
@@ -411,6 +457,10 @@ export const PurchasePage: React.FC = () => {
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Invalid email address'
+                      },
+                      validate: (value) => {
+                        const validation = validateEmail(value);
+                        return validation.isValid || 'Please enter a valid email address';
                       }
                     })}
                     type="email"
@@ -445,11 +495,21 @@ export const PurchasePage: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={!selectedGame}
+                  disabled={!selectedGame || isLoadingPayment}
                   className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  aria-busy={isLoadingPayment}
                 >
-                  <CreditCard className="h-5 w-5" />
-                  <span>Proceed to Payment</span>
+                  {isLoadingPayment ? (
+                    <>
+                      <Loader className="h-5 w-5 animate-spin" />
+                      <span>Loading payment form...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-5 w-5" />
+                      <span>Proceed to Payment</span>
+                    </>
+                  )}
                 </button>
               </form>
             ) : (
