@@ -304,21 +304,21 @@ export const PurchasePage: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (data: PurchaseForm) => {
+  const handleFormSubmit = async (data: PurchaseForm) => {
     if (!selectedGame) {
       setError('Please select a game');
       return;
     }
 
     // Validate and sanitize email
-    const emailValidation = validateEmail(_data.email);
+    const emailValidation = validateEmail(data.email);
     if (!emailValidation.isValid) {
       setError('Please enter a valid email address');
       return;
     }
 
     // Validate UUIDs
-    if (!validateUUID(_data.city_id) || !validateUUID(_data.game_id)) {
+    if (!validateUUID(data.city_id) || !validateUUID(data.game_id)) {
       setError('Invalid selection. Please refresh and try again.');
       return;
     }
@@ -326,7 +326,7 @@ export const PurchasePage: React.FC = () => {
     setError(null);
     // Capture newsletter subscription before payment if opted-in
     try {
-      if (_data.opt_in_marketing && emailValidation.sanitized) {
+      if (data.opt_in_marketing && emailValidation.sanitized) {
         const ipAddress = undefined; // Optionally populate from server if desired
         const { error } = await supabase
           .from('newsletter_subscribers')
